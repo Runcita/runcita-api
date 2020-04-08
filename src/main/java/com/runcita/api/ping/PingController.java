@@ -1,5 +1,7 @@
-package com.runcita.api;
+package com.runcita.api.ping;
 
+import com.runcita.api.user.UserService;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -9,8 +11,11 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 public class PingController {
 
+    @Autowired
+    UserService userService;
+
     /**
-     * Allows to check if the server is started
+     * Check if the server is started
      * @return string "pong"
      */
     @GetMapping("/ping")
