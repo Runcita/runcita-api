@@ -1,0 +1,13 @@
+language: java
+jdk:
+- oraclejdk14
+script:
+- "./mvnw test"
+cache:
+  directories:
+  - "$HOME/.m2/repository"
+deploy:
+  provider: heroku
+  app: runcita-api
+  api_key:
+    secure: $HEROKU_TOKEN
