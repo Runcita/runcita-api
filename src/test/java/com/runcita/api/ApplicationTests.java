@@ -1,10 +1,10 @@
-package com.runcita.runcitaapi;
+package com.runcita.api;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 
 @SpringBootTest
-class RuncitaApiApplicationTests {
+class ApplicationTests {
 
 	@Test
 	void contextLoads() {
