@@ -9,5 +9,4 @@ cache:
 deploy:
   provider: heroku
   app: runcita-api
-  api_key:
-    secure: $HEROKU_TOKEN
+  api_key: $HEROKU_TOKEN
