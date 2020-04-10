@@ -71,14 +71,14 @@ public class AuthController {
      * @return token
      */
     @PostMapping("/signup")
-    public String signup(@Valid @RequestBody User user) {
+    public String signup(@Valid @RequestBody User user, HttpServletResponse response) {
         if (this.userService.emailExists(user.getEmail())) {
-            return "EXISTS";
+            response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+            return "Email already exist";
         }
 
         user.encodePassword(this.passwordEncoder);
         this.userService.save(user);
         return this.tokenProvider.createToken(user.getEmail());
     }
-
 }

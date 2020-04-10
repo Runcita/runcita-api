@@ -54,5 +54,4 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
       .and()
       .apply(new JWTConfigurer(this.tokenProvider));
   }
-
 }
