@@ -22,12 +22,12 @@ public class User {
 
     @NotNull
     @Size(min = 2, max = 20)
-    @Pattern(regexp = "[a-zA-Z]+")
+    @Pattern(regexp = "\\p{L}*(-\\p{L}*)*")
     private String firstName;
 
     @NotNull
     @Size(min = 2, max = 20)
-    @Pattern(regexp = "[a-zA-Z]+")
+    @Pattern(regexp = "\\p{L}*(-\\p{L}*)*")
     private String lastName;
 
     @NotNull
