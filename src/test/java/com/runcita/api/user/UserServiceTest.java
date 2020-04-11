@@ -10,12 +10,11 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringRunner;
 
-import java.sql.Timestamp;
-import java.util.Date;
-import java.util.Optional;
+import java.time.LocalDateTime;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.when;
 
 @RunWith(SpringRunner.class)
@@ -35,7 +34,7 @@ class UserServiceTest {
             .firstName("firstname")
             .lastName("lastname")
             .city("city")
-            .birthday(new Timestamp(new Date().getTime()))
+            .birthday(LocalDateTime.now())
             .sexe(false)
             .build();
 

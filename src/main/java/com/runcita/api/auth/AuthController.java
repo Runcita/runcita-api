@@ -51,7 +51,7 @@ public class AuthController {
      * @param response
      * @return token
      */
-    @PostMapping("/signin")
+    @PostMapping(value = "/signin", consumes = { "application/json" })
     public String signin(@Valid @RequestBody Auth auth, HttpServletResponse response) {
         UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(auth.getEmail(), auth.getPassword());
 
@@ -70,7 +70,7 @@ public class AuthController {
      * @param user
      * @return token
      */
-    @PostMapping("/signup")
+    @PostMapping(value = "/signup", consumes = { "application/json" })
     public String signup(@Valid @RequestBody User user, HttpServletResponse response) {
         if (this.userService.emailExists(user.getEmail())) {
             response.setStatus(HttpServletResponse.SC_BAD_REQUEST);

@@ -9,7 +9,7 @@ import org.neo4j.ogm.annotation.Relationship;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import javax.validation.constraints.*;
-import java.sql.Timestamp;
+import java.time.LocalDateTime;
 
 @Data
 @NodeEntity
@@ -52,7 +52,7 @@ public class User {
     private RunningLevel runningLevel;
 
     @NotNull
-    private Timestamp birthday;
+    private LocalDateTime birthday;
 
     @NotNull
     @Pattern(regexp = "[a-zA-Z]+")
