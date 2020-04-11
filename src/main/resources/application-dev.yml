@@ -1,0 +1,10 @@
+spring:
+  data:
+    neo4j:
+      uri: ${NEO4J_URI}
+      username: ${NEO4J_USERNAME}
+      password: ${NEO4J_PASSWORD}
+
+app:
+  secret: ${SECURITY_SECRET}
+  token-validity-in-seconds: 3600

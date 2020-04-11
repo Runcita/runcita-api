@@ -4,3 +4,7 @@ spring:
       uri: bolt://localhost
       username: neo4j
       password: secret
+
+app:
+  secret: the_secret
+  token-validity-in-seconds: 3600
