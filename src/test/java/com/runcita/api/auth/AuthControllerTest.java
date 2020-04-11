@@ -20,8 +20,7 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
 
-import java.sql.Timestamp;
-import java.util.Date;
+import java.time.LocalDateTime;
 
 import static org.hamcrest.Matchers.containsString;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
@@ -61,7 +60,7 @@ public class AuthControllerTest {
             .firstName("firstname")
             .lastName("lastname")
             .city("city")
-            .birthday(new Timestamp(new Date().getTime()))
+            .birthday(LocalDateTime.now())
             .sexe(false)
             .build();
 
