@@ -5,7 +5,6 @@ spring:
       username: neo4j
       password: secret
 
-security:
-  jwt:
-    secret: landschootFamily
-    token-validity-in-seconds: 3600
+app:
+  secret: the_secret
+  token-validity-in-seconds: 3600

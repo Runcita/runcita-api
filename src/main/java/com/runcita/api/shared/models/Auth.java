@@ -1,12 +1,12 @@
 package com.runcita.api.shared.models;
 
+import lombok.Builder;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 
 import javax.validation.constraints.NotNull;
 
 @Data
-@NoArgsConstructor
+@Builder
 public class Auth {
 
     @NotNull

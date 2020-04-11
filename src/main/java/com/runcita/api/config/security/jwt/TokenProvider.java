@@ -1,6 +1,6 @@
 package com.runcita.api.config.security.jwt;
 
-import com.runcita.api.AppConfig;
+import com.runcita.api.config.AppConfig;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
