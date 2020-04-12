@@ -6,10 +6,9 @@ import org.neo4j.ogm.annotation.GeneratedValue;
 import org.neo4j.ogm.annotation.Id;
 import org.neo4j.ogm.annotation.NodeEntity;
 import org.neo4j.ogm.annotation.Relationship;
-import org.springframework.security.crypto.password.PasswordEncoder;
 
 import javax.validation.constraints.*;
-import java.time.LocalDateTime;
+import java.util.Date;
 
 @Data
 @NodeEntity
@@ -22,12 +21,12 @@ public class User {
 
     @NotNull
     @Size(min = 2, max = 20)
-    @Pattern(regexp = "\\p{L}*(-\\p{L}*)*")
+    @Pattern(regexp = "[A-Za-zÀ-ÖØ-öø-ÿ-]+")
     private String firstName;
 
     @NotNull
     @Size(min = 2, max = 20)
-    @Pattern(regexp = "\\p{L}*(-\\p{L}*)*")
+    @Pattern(regexp = "[A-Za-zÀ-ÖØ-öø-ÿ-]+")
     private String lastName;
 
     @NotNull
@@ -35,7 +34,7 @@ public class User {
     private String email;
 
     @NotNull
-    @Size(min = 8, max = 50)
+    @Size(min = 8, max = 100)
     private String password;
 
     @Max(300)
@@ -52,33 +51,9 @@ public class User {
     private RunningLevel runningLevel;
 
     @NotNull
-    private LocalDateTime birthday;
+    private Long birthday;
 
     @NotNull
     @Pattern(regexp = "[a-zA-Z]+")
     private String city;
-
-    /**
-     * Encode password
-     * @param passwordEncoder
-     */
-    public void encodePassword(PasswordEncoder passwordEncoder) {
-        this.password = passwordEncoder.encode(this.password);
-    }
-
-    @Override
-    public String toString() {
-        return "User{" +
-                "id=" + id +
-                ", firstName='" + firstName + '\'' +
-                ", lastName='" + lastName + '\'' +
-                ", email='" + email + '\'' +
-                ", description='" + description + '\'' +
-                ", picture='" + picture + '\'' +
-                ", sexe=" + sexe +
-                ", city='" + city + '\'' +
-                ", runningLevel='" + runningLevel + '\'' +
-                ", birthday=" + birthday +
-                '}';
-    }
 }

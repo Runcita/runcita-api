@@ -2,17 +2,20 @@ package com.runcita.api.auth;
 
 import com.runcita.api.config.security.jwt.TokenProvider;
 import com.runcita.api.shared.models.Auth;
+import com.runcita.api.shared.models.NewPassword;
 import com.runcita.api.shared.models.User;
 import com.runcita.api.user.UserService;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
-import javax.servlet.http.HttpServletResponse;
 import javax.validation.Valid;
+import java.util.Optional;
 
 /**
  * Auth controller
@@ -48,20 +51,17 @@ public class AuthController {
     /**
      * Authenticate a user
      * @param auth
-     * @param response
      * @return token
      */
     @PostMapping(value = "/signin", consumes = { "application/json" })
-    public String signin(@Valid @RequestBody Auth auth, HttpServletResponse response) {
+    public ResponseEntity<String> signin(@Valid @RequestBody Auth auth) {
         UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(auth.getEmail(), auth.getPassword());
 
         try {
-            this.authenticationManager.authenticate(authenticationToken);
-            return this.tokenProvider.createToken(auth.getEmail());
+            authenticationManager.authenticate(authenticationToken);
+            return new ResponseEntity<>(tokenProvider.createToken(auth.getEmail()), HttpStatus.OK);
         } catch (AuthenticationException e) {
-            log.info("Security exception {}", e.getMessage());
-            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-            return null;
+            return new ResponseEntity<>("Authentication failed", HttpStatus.UNAUTHORIZED);
         }
     }
 
@@ -71,14 +71,38 @@ public class AuthController {
      * @return token
      */
     @PostMapping(value = "/signup", consumes = { "application/json" })
-    public String signup(@Valid @RequestBody User user, HttpServletResponse response) {
-        if (this.userService.emailExists(user.getEmail())) {
-            response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-            return "Email already exist";
+    public ResponseEntity<String> signup(@Valid @RequestBody User user) {
+        if (userService.emailExists(user.getEmail())) {
+            return new ResponseEntity<>("Email already exist", HttpStatus.BAD_REQUEST);
         }
 
-        user.encodePassword(this.passwordEncoder);
-        this.userService.save(user);
-        return this.tokenProvider.createToken(user.getEmail());
+        user.setPassword(passwordEncoder.encode(user.getPassword()));
+        userService.save(user);
+        return new ResponseEntity<>(tokenProvider.createToken(user.getEmail()), HttpStatus.CREATED);
+    }
+
+    /**
+     * Update user password
+     * @param userId
+     * @param newPassword
+     * @return
+     */
+    @PutMapping(value = "/api/users/{userId}/updatepassword", consumes = { "application/json" })
+    public ResponseEntity updatePassword(@PathVariable("userId") Long userId, @Valid @RequestBody NewPassword newPassword) {
+        Optional<User> optionalUser = userService.getUserById(userId);
+        if(optionalUser.isEmpty()) {
+            return new ResponseEntity<>("User with id {"+userId+"} is not found", HttpStatus.BAD_REQUEST);
+        }
+        User user = optionalUser.get();
+
+        UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(user.getEmail(), newPassword.getOldPassword());
+        try {
+            authenticationManager.authenticate(authenticationToken);
+            user.setPassword(passwordEncoder.encode(newPassword.getNewPassword()));
+            userService.save(user);
+            return new ResponseEntity<>(HttpStatus.OK);
+        } catch (AuthenticationException e) {
+            return new ResponseEntity<>("Password is incorrect", HttpStatus.UNAUTHORIZED);
+        }
     }
 }
