@@ -2,6 +2,7 @@ package com.runcita.api.auth;
 
 import com.runcita.api.config.security.jwt.TokenProvider;
 import com.runcita.api.shared.models.Auth;
+import com.runcita.api.shared.models.NewEmail;
 import com.runcita.api.shared.models.NewPassword;
 import com.runcita.api.shared.models.User;
 import com.runcita.api.user.UserService;
@@ -99,6 +100,31 @@ public class AuthController {
         try {
             authenticationManager.authenticate(authenticationToken);
             user.setPassword(passwordEncoder.encode(newPassword.getNewPassword()));
+            userService.save(user);
+            return new ResponseEntity<>(HttpStatus.OK);
+        } catch (AuthenticationException e) {
+            return new ResponseEntity<>("Password is incorrect", HttpStatus.UNAUTHORIZED);
+        }
+    }
+
+    /**
+     * Update user email
+     * @param userId
+     * @param newEmail
+     * @return
+     */
+    @PutMapping(value = "/api/users/{userId}/updateemail", consumes = { "application/json" })
+    public ResponseEntity updateEmail(@PathVariable("userId") Long userId, @Valid @RequestBody NewEmail newEmail) {
+        Optional<User> optionalUser = userService.getUserById(userId);
+        if(optionalUser.isEmpty()) {
+            return new ResponseEntity<>("User with id {"+userId+"} is not found", HttpStatus.BAD_REQUEST);
+        }
+        User user = optionalUser.get();
+
+        UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(user.getEmail(), newEmail.getPassword());
+        try {
+            authenticationManager.authenticate(authenticationToken);
+            user.setEmail(newEmail.getNewEmail());
             userService.save(user);
             return new ResponseEntity<>(HttpStatus.OK);
         } catch (AuthenticationException e) {

@@ -1,5 +1,6 @@
 package com.runcita.api.shared.models;
 
+import io.swagger.v3.oas.annotations.Parameter;
 import lombok.Builder;
 import lombok.Data;
 import org.neo4j.ogm.annotation.GeneratedValue;
@@ -30,7 +31,7 @@ public class User {
     private String lastName;
 
     @NotNull
-    @Email
+    @Pattern(regexp = "^\\w+([\\.-]?\\w+)*@\\w+([\\.-]?\\w+)*(\\.\\w{2,3})+$")
     private String email;
 
     @NotNull
