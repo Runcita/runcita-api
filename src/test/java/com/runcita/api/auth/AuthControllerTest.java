@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectWriter;
 import com.runcita.api.Application;
 import com.runcita.api.config.security.jwt.TokenProvider;
 import com.runcita.api.shared.models.Auth;
+import com.runcita.api.shared.models.NewEmail;
 import com.runcita.api.shared.models.NewPassword;
 import com.runcita.api.shared.models.User;
 import com.runcita.api.user.UserService;
@@ -62,10 +63,12 @@ public class AuthControllerTest {
     private final String SIGNIN_PATH = "/signin";
     private final String SIGNUP_PATH = "/signup";
     private final String UPDATE_PASSWORD_PATH = "/api/users/{userId}/updatepassword";
+    private final String UPDATE_EMAIL_PATH = "/api/users/{userId}/updateemail";
 
     private User USER;
     private Auth AUTH;
     private NewPassword NEW_PASSWORD;
+    private NewEmail NEW_EMAIL;
 
     @Before
     public void initBeforeTest() {
@@ -87,7 +90,12 @@ public class AuthControllerTest {
 
         NEW_PASSWORD = NewPassword.builder()
                 .oldPassword(USER.getPassword())
-                .newPassword("910111213")
+                .newPassword("password-update")
+                .build();
+
+        NEW_EMAIL = NewEmail.builder()
+                .password(USER.getPassword())
+                .newEmail("email-upadate@gmail.com")
                 .build();
     }
 
@@ -185,6 +193,50 @@ public class AuthControllerTest {
         mockMvc.perform(put(UPDATE_PASSWORD_PATH, USER.getId())
                 .contentType(APPLICATION_JSON)
                 .content(objectWriter.writeValueAsString(NEW_PASSWORD)))
+                .andDo(print())
+                .andExpect(status().isUnauthorized())
+                .andExpect(content().string(containsString("Password is incorrect")));
+
+        verify(userService, times(0)).save(USER);
+    }
+
+    @Test
+    public void updateEmail_test() throws Exception {
+        Mockito.when(userService.getUserById(USER.getId())).thenReturn(Optional.of(USER));
+        Mockito.when(authenticationManager.authenticate(Mockito.any())).thenReturn(null);
+
+        mockMvc.perform(put(UPDATE_EMAIL_PATH, USER.getId())
+                .contentType(APPLICATION_JSON)
+                .content(objectWriter.writeValueAsString(NEW_EMAIL)))
+                .andDo(print())
+                .andExpect(status().isOk());
+
+        verify(userService).save(USER);
+        assertEquals(NEW_EMAIL.getNewEmail(), USER.getEmail());
+    }
+
+    @Test
+    public void updateEmail_with_user_not_found_test() throws Exception {
+        Mockito.when(userService.getUserById(USER.getId())).thenReturn(Optional.empty());
+
+        mockMvc.perform(put(UPDATE_EMAIL_PATH, USER.getId())
+                .contentType(APPLICATION_JSON)
+                .content(objectWriter.writeValueAsString(NEW_EMAIL)))
+                .andDo(print())
+                .andExpect(status().isBadRequest())
+                .andExpect(content().string(containsString("User with id {"+USER.getId()+"} is not found")));
+
+        verify(userService, times(0)).save(USER);
+    }
+
+    @Test
+    public void updateEmail_with_old_password_incorrect_test() throws Exception {
+        Mockito.when(userService.getUserById(USER.getId())).thenReturn(Optional.of(USER));
+        Mockito.when(authenticationManager.authenticate(Mockito.any())).thenThrow(new BadCredentialsException("no"));
+
+        mockMvc.perform(put(UPDATE_EMAIL_PATH, USER.getId())
+                .contentType(APPLICATION_JSON)
+                .content(objectWriter.writeValueAsString(NEW_EMAIL)))
                 .andDo(print())
                 .andExpect(status().isUnauthorized())
                 .andExpect(content().string(containsString("Password is incorrect")));
