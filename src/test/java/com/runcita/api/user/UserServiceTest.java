@@ -2,7 +2,8 @@ package com.runcita.api.user;
 
 import com.runcita.api.Application;
 import com.runcita.api.shared.models.User;
-import org.junit.jupiter.api.Test;
+import org.junit.Before;
+import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -10,7 +11,7 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringRunner;
 
-import java.time.LocalDateTime;
+import java.util.Optional;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -20,7 +21,7 @@ import static org.mockito.Mockito.when;
 @RunWith(SpringRunner.class)
 @SpringBootTest(classes = Application.class)
 @ActiveProfiles("test")
-class UserServiceTest {
+public class UserServiceTest {
 
     @Autowired
     UserService userService;
@@ -28,36 +29,60 @@ class UserServiceTest {
     @MockBean
     UserRepository userRepository;
 
-    private final User USER = User.builder()
-            .email("test@gmail.com")
-            .password("12345678")
-            .firstName("firstname")
-            .lastName("lastname")
-            .city("city")
-            .birthday(LocalDateTime.now())
-            .sexe(false)
-            .build();
+    private User USER;
 
-    @Test
-    void getUserByEmail_test() {
-        when(userRepository.findByEmail(USER.getEmail())).thenReturn(USER);
-        assertEquals(USER, userService.getUserByEmail(USER.getEmail()));
+    @Before
+    public void initBeforeTest() {
+        this.USER = User.builder()
+                .id(111L)
+                .email("user@gmail.com")
+                .password("12345678")
+                .firstName("firstname")
+                .lastName("lastname")
+                .city("city")
+                .birthday(1586653063000L)
+                .sexe(false)
+                .build();
     }
 
     @Test
-    void save_test() {
+    public void getUserById_test() {
+        when(userRepository.findById(USER.getId())).thenReturn(Optional.of(USER));
+        assertEquals(USER, userService.getUserById(USER.getId()).get());
+    }
+
+    @Test
+    public void getUserById_not_found_test() {
+        when(userRepository.findById(USER.getId())).thenReturn(Optional.empty());
+        assertTrue(userService.getUserById(USER.getId()).isEmpty());
+    }
+
+    @Test
+    public void getUserByEmail_test() {
+        when(userRepository.findByEmail(USER.getEmail())).thenReturn(Optional.of(USER));
+        assertEquals(USER, userService.getUserByEmail(USER.getEmail()).get());
+    }
+
+    @Test
+    public void getUserByEmail_not_found_test() {
+        when(userRepository.findByEmail(USER.getEmail())).thenReturn(Optional.empty());
+        assertTrue(userService.getUserByEmail(USER.getEmail()).isEmpty());
+    }
+
+    @Test
+    public void save_test() {
         when(userRepository.save(USER)).thenReturn(USER);
         assertEquals(USER, userService.save(USER));
     }
 
     @Test
-    void emailExists_with_true_value_test() {
+    public void emailExists_with_true_value_test() {
         when(userRepository.existsByEmail(USER.getEmail())).thenReturn(true);
         assertTrue(userService.emailExists(USER.getEmail()));
     }
 
     @Test
-    void emailExists_with_false_value_test() {
+    public void emailExists_with_false_value_test() {
         when(userRepository.existsByEmail(USER.getEmail())).thenReturn(false);
         assertFalse(userService.emailExists(USER.getEmail()));
     }

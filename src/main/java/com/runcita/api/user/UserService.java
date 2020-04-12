@@ -4,6 +4,8 @@ import com.runcita.api.shared.models.User;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.Optional;
+
 /**
  * User service
  */
@@ -14,11 +16,20 @@ public class UserService {
     UserRepository userRepository;
 
     /**
+     * Retrieve a user by id
+     * @param id
+     * @return user
+     */
+    public Optional<User> getUserById(Long id) {
+        return userRepository.findById(id);
+    }
+
+    /**
      * Retrieve a user by email
      * @param email
      * @return user
      */
-    public User getUserByEmail(String email) {
+    public Optional<User> getUserByEmail(String email) {
         return userRepository.findByEmail(email);
     }
 
