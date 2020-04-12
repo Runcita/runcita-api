@@ -54,6 +54,6 @@ public class User {
     private Long birthday;
 
     @NotNull
-    @Pattern(regexp = "[a-zA-Z]+")
-    private String city;
+    @Relationship(type = "TO_LIVE")
+    private City city;
 }

@@ -5,11 +5,12 @@ import com.fasterxml.jackson.databind.ObjectWriter;
 import com.runcita.api.Application;
 import com.runcita.api.config.security.jwt.TokenProvider;
 import com.runcita.api.shared.models.Auth;
+import com.runcita.api.shared.models.City;
 import com.runcita.api.shared.models.NewPassword;
 import com.runcita.api.shared.models.User;
 import com.runcita.api.user.UserService;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.runner.RunWith;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -39,7 +40,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @SpringBootTest(classes = Application.class)
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
-public class AuthControllerTest {
+class AuthControllerTest {
 
     @MockBean
     UserService userService;
@@ -67,15 +68,18 @@ public class AuthControllerTest {
     private Auth AUTH;
     private NewPassword NEW_PASSWORD;
 
-    @Before
-    public void initBeforeTest() {
+    @BeforeEach
+    void initBeforeTest() {
         USER = User.builder()
                 .id(111L)
                 .email("user@gmail.com")
                 .password("12345678")
                 .firstName("firstname")
                 .lastName("lastname")
-                .city("city")
+                .city(City.builder()
+                        .name("city")
+                        .code(1)
+                        .build())
                 .birthday(1586653063000L)
                 .sexe(false)
                 .build();
@@ -92,14 +96,14 @@ public class AuthControllerTest {
     }
 
     @Test
-    public void authenticate_test() throws Exception {
+    void authenticate_test() throws Exception {
         mockMvc.perform(get(AUTHENTICATE_PATH))
                 .andDo(print())
                 .andExpect(status().isOk());
     }
 
     @Test
-    public void signin_test() throws Exception {
+    void signin_test() throws Exception {
         Mockito.when(authenticationManager.authenticate(Mockito.any())).thenReturn(null);
         Mockito.when(tokenProvider.createToken(USER.getEmail())).thenReturn("Token");
 
@@ -112,7 +116,7 @@ public class AuthControllerTest {
     }
 
     @Test
-    public void signin_with_bad_credentials_test() throws Exception {
+    void signin_with_bad_credentials_test() throws Exception {
         Mockito.when(authenticationManager.authenticate(Mockito.any())).thenThrow(new BadCredentialsException("no"));
 
         mockMvc.perform(post(SIGNIN_PATH)
@@ -123,7 +127,7 @@ public class AuthControllerTest {
     }
 
     @Test
-    public void signup_test() throws Exception {
+    void signup_test() throws Exception {
         Mockito.when(userService.emailExists(SIGNUP_PATH)).thenReturn(false);
         Mockito.when(tokenProvider.createToken(USER.getEmail())).thenReturn("Token");
 
@@ -136,7 +140,7 @@ public class AuthControllerTest {
     }
 
     @Test
-    public void signup_with_email_already_exist_test() throws Exception {
+    void signup_with_email_already_exist_test() throws Exception {
         Mockito.when(userService.emailExists(USER.getEmail())).thenReturn(true);
 
         mockMvc.perform(post(SIGNUP_PATH)
@@ -148,7 +152,7 @@ public class AuthControllerTest {
     }
 
     @Test
-    public void updatePassword_test() throws Exception {
+    void updatePassword_test() throws Exception {
         Mockito.when(userService.getUserById(USER.getId())).thenReturn(Optional.of(USER));
         Mockito.when(authenticationManager.authenticate(Mockito.any())).thenReturn(null);
         Mockito.when(passwordEncoder.encode(NEW_PASSWORD.getNewPassword())).thenReturn("password-encoder");
@@ -164,7 +168,7 @@ public class AuthControllerTest {
     }
 
     @Test
-    public void updatePassword_with_user_not_found_test() throws Exception {
+    void updatePassword_with_user_not_found_test() throws Exception {
         Mockito.when(userService.getUserById(USER.getId())).thenReturn(Optional.empty());
 
         mockMvc.perform(put(UPDATE_PASSWORD_PATH, USER.getId())
@@ -178,7 +182,7 @@ public class AuthControllerTest {
     }
 
     @Test
-    public void updatePassword_with_old_password_incorrect_test() throws Exception {
+    void updatePassword_with_old_password_incorrect_test() throws Exception {
         Mockito.when(userService.getUserById(USER.getId())).thenReturn(Optional.of(USER));
         Mockito.when(authenticationManager.authenticate(Mockito.any())).thenThrow(new BadCredentialsException("no"));
 
