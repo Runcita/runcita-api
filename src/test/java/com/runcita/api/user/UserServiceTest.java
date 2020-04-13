@@ -3,6 +3,7 @@ package com.runcita.api.user;
 import com.runcita.api.Application;
 import com.runcita.api.shared.models.City;
 import com.runcita.api.shared.models.User;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.runner.RunWith;
@@ -50,15 +51,15 @@ class UserServiceTest {
     }
 
     @Test
-    void getUserById_test() {
+    void getUserById_test() throws UserNotFoundException {
         when(userRepository.findById(USER.getId())).thenReturn(Optional.of(USER));
-        assertEquals(USER, userService.getUserById(USER.getId()).get());
+        assertEquals(USER, userService.getUserById(USER.getId()));
     }
 
     @Test
     void getUserById_not_found_test() {
         when(userRepository.findById(USER.getId())).thenReturn(Optional.empty());
-        assertTrue(userService.getUserById(USER.getId()).isEmpty());
+        Assertions.assertThrows(UserNotFoundException.class, () -> userService.getUserById(USER.getId()));
     }
 
     @Test

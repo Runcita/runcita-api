@@ -2,6 +2,8 @@ package com.runcita.api.user;
 
 import com.runcita.api.shared.models.User;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import java.util.Optional;
@@ -17,11 +19,15 @@ public class UserService {
 
     /**
      * Retrieve a user by id
-     * @param id
+     * @param userId
      * @return user
      */
-    public Optional<User> getUserById(Long id) {
-        return userRepository.findById(id);
+    public User getUserById(Long userId) throws UserNotFoundException {
+        Optional<User> optionalUser = userRepository.findById(userId);
+        if(optionalUser.isEmpty()) {
+            throw new UserNotFoundException(userId);
+        }
+        return optionalUser.get();
     }
 
     /**

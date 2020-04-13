@@ -2,8 +2,6 @@ package com.runcita.api.auth;
 
 import com.runcita.api.config.security.jwt.TokenProvider;
 import com.runcita.api.shared.models.Auth;
-import com.runcita.api.shared.models.NewEmail;
-import com.runcita.api.shared.models.NewPassword;
 import com.runcita.api.shared.models.User;
 import com.runcita.api.user.UserService;
 import lombok.extern.slf4j.Slf4j;
@@ -16,7 +14,6 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;
-import java.util.Optional;
 
 /**
  * Auth controller
@@ -80,55 +77,5 @@ public class AuthController {
         user.setPassword(passwordEncoder.encode(user.getPassword()));
         userService.save(user);
         return new ResponseEntity<>(tokenProvider.createToken(user.getEmail()), HttpStatus.CREATED);
-    }
-
-    /**
-     * Update user password
-     * @param userId
-     * @param newPassword
-     * @return
-     */
-    @PutMapping(value = "/api/users/{userId}/updatepassword", consumes = { "application/json" })
-    public ResponseEntity updatePassword(@PathVariable("userId") Long userId, @Valid @RequestBody NewPassword newPassword) {
-        Optional<User> optionalUser = userService.getUserById(userId);
-        if(optionalUser.isEmpty()) {
-            return new ResponseEntity<>("User with id {"+userId+"} is not found", HttpStatus.BAD_REQUEST);
-        }
-        User user = optionalUser.get();
-
-        UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(user.getEmail(), newPassword.getOldPassword());
-        try {
-            authenticationManager.authenticate(authenticationToken);
-            user.setPassword(passwordEncoder.encode(newPassword.getNewPassword()));
-            userService.save(user);
-            return new ResponseEntity<>(HttpStatus.OK);
-        } catch (AuthenticationException e) {
-            return new ResponseEntity<>("Password is incorrect", HttpStatus.UNAUTHORIZED);
-        }
-    }
-
-    /**
-     * Update user email
-     * @param userId
-     * @param newEmail
-     * @return
-     */
-    @PutMapping(value = "/api/users/{userId}/updateemail", consumes = { "application/json" })
-    public ResponseEntity updateEmail(@PathVariable("userId") Long userId, @Valid @RequestBody NewEmail newEmail) {
-        Optional<User> optionalUser = userService.getUserById(userId);
-        if(optionalUser.isEmpty()) {
-            return new ResponseEntity<>("User with id {"+userId+"} is not found", HttpStatus.BAD_REQUEST);
-        }
-        User user = optionalUser.get();
-
-        UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(user.getEmail(), newEmail.getPassword());
-        try {
-            authenticationManager.authenticate(authenticationToken);
-            user.setEmail(newEmail.getNewEmail());
-            userService.save(user);
-            return new ResponseEntity<>(HttpStatus.OK);
-        } catch (AuthenticationException e) {
-            return new ResponseEntity<>("Password is incorrect", HttpStatus.UNAUTHORIZED);
-        }
     }
 }
