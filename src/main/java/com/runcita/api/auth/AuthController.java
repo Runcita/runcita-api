@@ -1,5 +1,6 @@
 package com.runcita.api.auth;
 
+import com.runcita.api.config.security.jwt.JWTFilter;
 import com.runcita.api.config.security.jwt.TokenProvider;
 import com.runcita.api.shared.models.Auth;
 import com.runcita.api.shared.models.NewEmail;
@@ -15,6 +16,7 @@ import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
+import javax.servlet.http.HttpServletRequest;
 import javax.validation.Valid;
 import java.util.Optional;
 
@@ -78,7 +80,7 @@ public class AuthController {
         }
 
         user.setPassword(passwordEncoder.encode(user.getPassword()));
-        userService.save(user);
+        userService.saveUser(user);
         return new ResponseEntity<>(tokenProvider.createToken(user.getEmail()), HttpStatus.CREATED);
     }
 
@@ -100,7 +102,7 @@ public class AuthController {
         try {
             authenticationManager.authenticate(authenticationToken);
             user.setPassword(passwordEncoder.encode(newPassword.getNewPassword()));
-            userService.save(user);
+            userService.saveUser(user);
             return new ResponseEntity<>(HttpStatus.OK);
         } catch (AuthenticationException e) {
             return new ResponseEntity<>("Password is incorrect", HttpStatus.UNAUTHORIZED);
@@ -129,10 +131,33 @@ public class AuthController {
         try {
             authenticationManager.authenticate(authenticationToken);
             user.setEmail(newEmail.getNewEmail());
-            userService.save(user);
+            userService.saveUser(user);
             return new ResponseEntity<>(HttpStatus.OK);
         } catch (AuthenticationException e) {
             return new ResponseEntity<>("Password is incorrect", HttpStatus.UNAUTHORIZED);
         }
+    }
+
+    /**
+     * Delete user
+     * @param request
+     * @param userId
+     * @return
+     */
+    @DeleteMapping(value = "/api/users/{userId}")
+    public ResponseEntity deleteUser(HttpServletRequest request, @PathVariable("userId") Long userId) {
+        Optional<User> optionalUser = userService.getUserById(userId);
+        if(optionalUser.isEmpty()) {
+            return new ResponseEntity<>("User with id {"+userId+"} is not found", HttpStatus.BAD_REQUEST);
+        }
+        User user = optionalUser.get();
+
+        String requestEmail = tokenProvider.getUsername(JWTFilter.resolveToken(request));
+        if(!user.getEmail().equals(requestEmail)) {
+            return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
+        }
+
+        userService.deleteUser(user);
+        return new ResponseEntity<>(HttpStatus.OK);
     }
 }

@@ -5,12 +5,13 @@ import com.fasterxml.jackson.databind.ObjectWriter;
 import com.runcita.api.Application;
 import com.runcita.api.config.security.jwt.TokenProvider;
 import com.runcita.api.shared.models.Auth;
+import com.runcita.api.shared.models.City;
 import com.runcita.api.shared.models.NewEmail;
 import com.runcita.api.shared.models.NewPassword;
 import com.runcita.api.shared.models.User;
 import com.runcita.api.user.UserService;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.runner.RunWith;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,6 +29,7 @@ import java.util.Optional;
 
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertEquals;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
@@ -40,7 +42,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @SpringBootTest(classes = Application.class)
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
-public class AuthControllerTest {
+class AuthControllerTest {
 
     @MockBean
     UserService userService;
@@ -64,21 +66,25 @@ public class AuthControllerTest {
     private final String SIGNUP_PATH = "/signup";
     private final String UPDATE_PASSWORD_PATH = "/api/users/{userId}/updatepassword";
     private final String UPDATE_EMAIL_PATH = "/api/users/{userId}/updateemail";
+    private final String DELETE_USER_PATH = "/api/users/{userId}";
 
     private User USER;
     private Auth AUTH;
     private NewPassword NEW_PASSWORD;
     private NewEmail NEW_EMAIL;
 
-    @Before
-    public void initBeforeTest() {
+    @BeforeEach
+    void initBeforeTest() {
         USER = User.builder()
                 .id(111L)
                 .email("user@gmail.com")
                 .password("12345678")
                 .firstName("firstname")
                 .lastName("lastname")
-                .city("city")
+                .city(City.builder()
+                        .name("city")
+                        .code(1)
+                        .build())
                 .birthday(1586653063000L)
                 .sexe(false)
                 .build();
@@ -100,15 +106,15 @@ public class AuthControllerTest {
     }
 
     @Test
-    public void authenticate_test() throws Exception {
+    void authenticate_test() throws Exception {
         mockMvc.perform(get(AUTHENTICATE_PATH))
                 .andDo(print())
                 .andExpect(status().isOk());
     }
 
     @Test
-    public void signin_test() throws Exception {
-        Mockito.when(authenticationManager.authenticate(Mockito.any())).thenReturn(null);
+    void signin_test() throws Exception {
+        Mockito.when(authenticationManager.authenticate(any())).thenReturn(null);
         Mockito.when(tokenProvider.createToken(USER.getEmail())).thenReturn("Token");
 
         mockMvc.perform(post(SIGNIN_PATH)
@@ -120,8 +126,8 @@ public class AuthControllerTest {
     }
 
     @Test
-    public void signin_with_bad_credentials_test() throws Exception {
-        Mockito.when(authenticationManager.authenticate(Mockito.any())).thenThrow(new BadCredentialsException("no"));
+    void signin_with_bad_credentials_test() throws Exception {
+        Mockito.when(authenticationManager.authenticate(any())).thenThrow(new BadCredentialsException("no"));
 
         mockMvc.perform(post(SIGNIN_PATH)
                 .contentType(APPLICATION_JSON)
@@ -131,7 +137,7 @@ public class AuthControllerTest {
     }
 
     @Test
-    public void signup_test() throws Exception {
+    void signup_test() throws Exception {
         Mockito.when(userService.emailExists(SIGNUP_PATH)).thenReturn(false);
         Mockito.when(tokenProvider.createToken(USER.getEmail())).thenReturn("Token");
 
@@ -144,7 +150,7 @@ public class AuthControllerTest {
     }
 
     @Test
-    public void signup_with_email_already_exist_test() throws Exception {
+    void signup_with_email_already_exist_test() throws Exception {
         Mockito.when(userService.emailExists(USER.getEmail())).thenReturn(true);
 
         mockMvc.perform(post(SIGNUP_PATH)
@@ -156,9 +162,9 @@ public class AuthControllerTest {
     }
 
     @Test
-    public void updatePassword_test() throws Exception {
+    void updatePassword_test() throws Exception {
         Mockito.when(userService.getUserById(USER.getId())).thenReturn(Optional.of(USER));
-        Mockito.when(authenticationManager.authenticate(Mockito.any())).thenReturn(null);
+        Mockito.when(authenticationManager.authenticate(any())).thenReturn(null);
         Mockito.when(passwordEncoder.encode(NEW_PASSWORD.getNewPassword())).thenReturn("password-encoder");
 
         mockMvc.perform(put(UPDATE_PASSWORD_PATH, USER.getId())
@@ -167,12 +173,12 @@ public class AuthControllerTest {
                 .andDo(print())
                 .andExpect(status().isOk());
 
-        verify(userService).save(USER);
+        verify(userService).saveUser(USER);
         assertEquals("password-encoder", USER.getPassword());
     }
 
     @Test
-    public void updatePassword_with_user_not_found_test() throws Exception {
+    void updatePassword_with_user_not_found_test() throws Exception {
         Mockito.when(userService.getUserById(USER.getId())).thenReturn(Optional.empty());
 
         mockMvc.perform(put(UPDATE_PASSWORD_PATH, USER.getId())
@@ -182,13 +188,13 @@ public class AuthControllerTest {
                 .andExpect(status().isBadRequest())
                 .andExpect(content().string(containsString("User with id {"+USER.getId()+"} is not found")));
 
-        verify(userService, times(0)).save(USER);
+        verify(userService, times(0)).saveUser(USER);
     }
 
     @Test
-    public void updatePassword_with_old_password_incorrect_test() throws Exception {
+    void updatePassword_with_old_password_incorrect_test() throws Exception {
         Mockito.when(userService.getUserById(USER.getId())).thenReturn(Optional.of(USER));
-        Mockito.when(authenticationManager.authenticate(Mockito.any())).thenThrow(new BadCredentialsException("no"));
+        Mockito.when(authenticationManager.authenticate(any())).thenThrow(new BadCredentialsException("no"));
 
         mockMvc.perform(put(UPDATE_PASSWORD_PATH, USER.getId())
                 .contentType(APPLICATION_JSON)
@@ -197,14 +203,14 @@ public class AuthControllerTest {
                 .andExpect(status().isUnauthorized())
                 .andExpect(content().string(containsString("Password is incorrect")));
 
-        verify(userService, times(0)).save(USER);
+        verify(userService, times(0)).saveUser(USER);
     }
 
     @Test
     public void updateEmail_test() throws Exception {
         Mockito.when(userService.getUserById(USER.getId())).thenReturn(Optional.of(USER));
         Mockito.when(userService.emailExists(NEW_EMAIL.getNewEmail())).thenReturn(false);
-        Mockito.when(authenticationManager.authenticate(Mockito.any())).thenReturn(null);
+        Mockito.when(authenticationManager.authenticate(any())).thenReturn(null);
 
         mockMvc.perform(put(UPDATE_EMAIL_PATH, USER.getId())
                 .contentType(APPLICATION_JSON)
@@ -212,7 +218,7 @@ public class AuthControllerTest {
                 .andDo(print())
                 .andExpect(status().isOk());
 
-        verify(userService).save(USER);
+        verify(userService).saveUser(USER);
         assertEquals(NEW_EMAIL.getNewEmail(), USER.getEmail());
     }
 
@@ -228,7 +234,7 @@ public class AuthControllerTest {
                 .andExpect(status().isBadRequest())
                 .andExpect(content().string(containsString("User with id {"+USER.getId()+"} is not found")));
 
-        verify(userService, times(0)).save(USER);
+        verify(userService, times(0)).saveUser(USER);
     }
 
     @Test
@@ -251,7 +257,7 @@ public class AuthControllerTest {
         Mockito.when(userService.getUserById(USER.getId())).thenReturn(Optional.of(USER));
         Mockito.when(userService.emailExists(NEW_EMAIL.getNewEmail())).thenReturn(false);
         Mockito.when(authenticationManager.authenticate(Mockito.any())).thenThrow(new BadCredentialsException("no"));
-
+      
         mockMvc.perform(put(UPDATE_EMAIL_PATH, USER.getId())
                 .contentType(APPLICATION_JSON)
                 .content(objectWriter.writeValueAsString(NEW_EMAIL)))
@@ -259,7 +265,43 @@ public class AuthControllerTest {
                 .andExpect(status().isUnauthorized())
                 .andExpect(content().string(containsString("Password is incorrect")));
 
-        verify(userService, times(0)).save(USER);
+        verify(userService, times(0)).saveUser(USER);
+    }
+
+    @Test
+    public void deleteUser_test() throws Exception {
+        Mockito.when(userService.getUserById(USER.getId())).thenReturn(Optional.of(USER));
+        Mockito.when(tokenProvider.getUsername(any())).thenReturn(USER.getEmail());
+
+        mockMvc.perform(delete(DELETE_USER_PATH, USER.getId()))
+                .andDo(print())
+                .andExpect(status().isOk());
+
+        verify(userService).deleteUser(USER);
+    }
+
+    @Test
+    public void deleteUser_with_user_not_found_test() throws Exception {
+        Mockito.when(userService.getUserById(USER.getId())).thenReturn(Optional.empty());
+
+        mockMvc.perform(delete(DELETE_USER_PATH, USER.getId()))
+                .andDo(print())
+                .andExpect(status().isBadRequest())
+                .andExpect(content().string(containsString("User with id {"+USER.getId()+"} is not found")));
+
+        verify(userService, times(0)).deleteUser(USER);
+    }
+
+    @Test
+    public void deleteUser_with_user_not_authorize_test() throws Exception {
+        Mockito.when(userService.getUserById(USER.getId())).thenReturn(Optional.of(USER));
+        Mockito.when(tokenProvider.getUsername(any())).thenReturn("email other user");
+
+        mockMvc.perform(delete(DELETE_USER_PATH, USER.getId()))
+                .andDo(print())
+                .andExpect(status().isUnauthorized());
+
+        verify(userService, times(0)).deleteUser(USER);
     }
 }
 
