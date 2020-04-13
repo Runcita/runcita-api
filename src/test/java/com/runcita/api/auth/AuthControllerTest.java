@@ -24,6 +24,9 @@ import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
 
 import static org.hamcrest.Matchers.containsString;
+
+import static org.mockito.ArgumentMatchers.any;
+
 import static org.springframework.http.MediaType.APPLICATION_JSON;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -54,9 +57,9 @@ class AuthControllerTest {
 
     private ObjectWriter objectWriter = new ObjectMapper().writer().withDefaultPrettyPrinter();
 
-    private final String AUTHENTICATE_PATH = "/authenticate";
-    private final String SIGNIN_PATH = "/signin";
-    private final String SIGNUP_PATH = "/signup";
+    private final String AUTHENTICATE_PATH = "/auth/authenticate";
+    private final String SIGNIN_PATH = "/auth/signin";
+    private final String SIGNUP_PATH = "/auth/signup";
 
     private User USER;
     private Auth AUTH;
@@ -91,7 +94,7 @@ class AuthControllerTest {
 
     @Test
     void signin_test() throws Exception {
-        Mockito.when(authenticationManager.authenticate(Mockito.any())).thenReturn(null);
+        Mockito.when(authenticationManager.authenticate(any())).thenReturn(null);
         Mockito.when(tokenProvider.createToken(USER.getEmail())).thenReturn("Token");
 
         mockMvc.perform(post(SIGNIN_PATH)
@@ -104,7 +107,7 @@ class AuthControllerTest {
 
     @Test
     void signin_with_bad_credentials_test() throws Exception {
-        Mockito.when(authenticationManager.authenticate(Mockito.any())).thenThrow(new BadCredentialsException("no"));
+        Mockito.when(authenticationManager.authenticate(any())).thenThrow(new BadCredentialsException("no"));
 
         mockMvc.perform(post(SIGNIN_PATH)
                 .contentType(APPLICATION_JSON)

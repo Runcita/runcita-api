@@ -21,6 +21,7 @@ import javax.validation.Valid;
 @Slf4j
 @RestController
 @CrossOrigin
+@RequestMapping("/auth")
 public class AuthController {
 
     private final UserService userService;
@@ -75,7 +76,7 @@ public class AuthController {
         }
 
         user.setPassword(passwordEncoder.encode(user.getPassword()));
-        userService.save(user);
+        userService.saveUser(user);
         return new ResponseEntity<>(tokenProvider.createToken(user.getEmail()), HttpStatus.CREATED);
     }
 }

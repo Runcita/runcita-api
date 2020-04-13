@@ -55,7 +55,7 @@ public class UserController {
         try {
             authenticationManager.authenticate(authenticationToken);
             user.setPassword(passwordEncoder.encode(newPassword.getNewPassword()));
-            userService.save(user);
+            userService.saveUser(user);
             return new ResponseEntity<>(HttpStatus.OK);
         } catch (AuthenticationException e) {
             return new ResponseEntity<>("Password is incorrect", HttpStatus.UNAUTHORIZED);
@@ -76,11 +76,29 @@ public class UserController {
         try {
             authenticationManager.authenticate(authenticationToken);
             user.setEmail(newEmail.getNewEmail());
-            userService.save(user);
+            userService.saveUser(user);
             return new ResponseEntity<>(HttpStatus.OK);
         } catch (AuthenticationException e) {
             return new ResponseEntity<>("Password is incorrect", HttpStatus.UNAUTHORIZED);
         }
+    }
+
+    /**
+     * Delete user
+     * @param request
+     * @param userId
+     */
+    @DeleteMapping(value = "/{userId}")
+    public ResponseEntity deleteUser(HttpServletRequest request, @PathVariable("userId") Long userId) throws UserNotFoundException {
+        User user = userService.getUserById(userId);
+
+        String requestEmail = tokenProvider.getUsername(JWTFilter.resolveToken(request));
+        if(!user.getEmail().equals(requestEmail)) {
+            return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
+        }
+
+        userService.deleteUser(user);
+        return new ResponseEntity<>(HttpStatus.OK);
     }
 
     /**
@@ -110,9 +128,10 @@ public class UserController {
             return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
         }
 
+        userUpdate.setId(user.getId());
         userUpdate.setEmail(user.getEmail());
         userUpdate.setPassword(user.getPassword());
-        userService.save(userUpdate);
+        userService.saveUser(userUpdate);
         return new ResponseEntity<>(userUpdate, HttpStatus.OK);
     }
 

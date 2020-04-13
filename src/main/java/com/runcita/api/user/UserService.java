@@ -43,8 +43,16 @@ public class UserService {
      * Save a user
      * @param user
      */
-    public User save(User user) {
+    public User saveUser(User user) {
         return userRepository.save(user);
+    }
+
+    /**
+     * Delete a user
+     * @param user
+     */
+    public void deleteUser(User user) {
+        userRepository.delete(user);
     }
 
     /**

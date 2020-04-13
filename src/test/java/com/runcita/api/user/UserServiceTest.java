@@ -18,6 +18,7 @@ import java.util.Optional;
 import static org.junit.Assert.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @RunWith(SpringRunner.class)
@@ -75,9 +76,16 @@ class UserServiceTest {
     }
 
     @Test
-    void save_test() {
+    void saveUser_test() {
         when(userRepository.save(USER)).thenReturn(USER);
-        assertEquals(USER, userService.save(USER));
+        assertEquals(USER, userService.saveUser(USER));
+        verify(userRepository).save(USER);
+    }
+
+    @Test
+    void deleteUser_test() {
+        userService.deleteUser(USER);
+        verify(userRepository).delete(USER);
     }
 
     @Test
