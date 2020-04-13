@@ -123,6 +123,10 @@ public class AuthController {
         }
         User user = optionalUser.get();
 
+        if (userService.emailExists(newEmail.getNewEmail())) {
+            return new ResponseEntity<>("Email already exist", HttpStatus.BAD_REQUEST);
+        }
+
         UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(user.getEmail(), newEmail.getPassword());
         try {
             authenticationManager.authenticate(authenticationToken);

@@ -209,6 +209,7 @@ class AuthControllerTest {
     @Test
     public void updateEmail_test() throws Exception {
         Mockito.when(userService.getUserById(USER.getId())).thenReturn(Optional.of(USER));
+        Mockito.when(userService.emailExists(NEW_EMAIL.getNewEmail())).thenReturn(false);
         Mockito.when(authenticationManager.authenticate(any())).thenReturn(null);
 
         mockMvc.perform(put(UPDATE_EMAIL_PATH, USER.getId())
@@ -224,6 +225,7 @@ class AuthControllerTest {
     @Test
     public void updateEmail_with_user_not_found_test() throws Exception {
         Mockito.when(userService.getUserById(USER.getId())).thenReturn(Optional.empty());
+        Mockito.when(userService.emailExists(NEW_EMAIL.getNewEmail())).thenReturn(false);
 
         mockMvc.perform(put(UPDATE_EMAIL_PATH, USER.getId())
                 .contentType(APPLICATION_JSON)
@@ -236,10 +238,26 @@ class AuthControllerTest {
     }
 
     @Test
+    public void updateEmail_with_email_already_exist_test() throws Exception {
+        Mockito.when(userService.getUserById(USER.getId())).thenReturn(Optional.of(USER));
+        Mockito.when(userService.emailExists(NEW_EMAIL.getNewEmail())).thenReturn(true);
+
+        mockMvc.perform(put(UPDATE_EMAIL_PATH, USER.getId())
+                .contentType(APPLICATION_JSON)
+                .content(objectWriter.writeValueAsString(NEW_EMAIL)))
+                .andDo(print())
+                .andExpect(status().isBadRequest())
+                .andExpect(content().string(containsString("Email already exist")));
+
+        verify(userService, times(0)).save(USER);
+    }
+
+    @Test
     public void updateEmail_with_old_password_incorrect_test() throws Exception {
         Mockito.when(userService.getUserById(USER.getId())).thenReturn(Optional.of(USER));
-        Mockito.when(authenticationManager.authenticate(any())).thenThrow(new BadCredentialsException("no"));
-
+        Mockito.when(userService.emailExists(NEW_EMAIL.getNewEmail())).thenReturn(false);
+        Mockito.when(authenticationManager.authenticate(Mockito.any())).thenThrow(new BadCredentialsException("no"));
+      
         mockMvc.perform(put(UPDATE_EMAIL_PATH, USER.getId())
                 .contentType(APPLICATION_JSON)
                 .content(objectWriter.writeValueAsString(NEW_EMAIL)))
