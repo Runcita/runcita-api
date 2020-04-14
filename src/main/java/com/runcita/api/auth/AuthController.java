@@ -1,10 +1,7 @@
 package com.runcita.api.auth;
 
-import com.runcita.api.config.security.jwt.JWTFilter;
 import com.runcita.api.config.security.jwt.TokenProvider;
 import com.runcita.api.shared.models.Auth;
-import com.runcita.api.shared.models.NewEmail;
-import com.runcita.api.shared.models.NewPassword;
 import com.runcita.api.shared.models.User;
 import com.runcita.api.user.UserService;
 import lombok.extern.slf4j.Slf4j;
@@ -16,9 +13,7 @@ import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
-import javax.servlet.http.HttpServletRequest;
 import javax.validation.Valid;
-import java.util.Optional;
 
 /**
  * Auth controller
@@ -26,6 +21,7 @@ import java.util.Optional;
 @Slf4j
 @RestController
 @CrossOrigin
+@RequestMapping("/auth")
 public class AuthController {
 
     private final UserService userService;
@@ -82,82 +78,5 @@ public class AuthController {
         user.setPassword(passwordEncoder.encode(user.getPassword()));
         userService.saveUser(user);
         return new ResponseEntity<>(tokenProvider.createToken(user.getEmail()), HttpStatus.CREATED);
-    }
-
-    /**
-     * Update user password
-     * @param userId
-     * @param newPassword
-     * @return
-     */
-    @PutMapping(value = "/api/users/{userId}/updatepassword", consumes = { "application/json" })
-    public ResponseEntity updatePassword(@PathVariable("userId") Long userId, @Valid @RequestBody NewPassword newPassword) {
-        Optional<User> optionalUser = userService.getUserById(userId);
-        if(optionalUser.isEmpty()) {
-            return new ResponseEntity<>("User with id {"+userId+"} is not found", HttpStatus.BAD_REQUEST);
-        }
-        User user = optionalUser.get();
-
-        UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(user.getEmail(), newPassword.getOldPassword());
-        try {
-            authenticationManager.authenticate(authenticationToken);
-            user.setPassword(passwordEncoder.encode(newPassword.getNewPassword()));
-            userService.saveUser(user);
-            return new ResponseEntity<>(HttpStatus.OK);
-        } catch (AuthenticationException e) {
-            return new ResponseEntity<>("Password is incorrect", HttpStatus.UNAUTHORIZED);
-        }
-    }
-
-    /**
-     * Update user email
-     * @param userId
-     * @param newEmail
-     * @return
-     */
-    @PutMapping(value = "/api/users/{userId}/updateemail", consumes = { "application/json" })
-    public ResponseEntity updateEmail(@PathVariable("userId") Long userId, @Valid @RequestBody NewEmail newEmail) {
-        Optional<User> optionalUser = userService.getUserById(userId);
-        if(optionalUser.isEmpty()) {
-            return new ResponseEntity<>("User with id {"+userId+"} is not found", HttpStatus.BAD_REQUEST);
-        }
-        User user = optionalUser.get();
-
-        if (userService.emailExists(newEmail.getNewEmail())) {
-            return new ResponseEntity<>("Email already exist", HttpStatus.BAD_REQUEST);
-        }
-
-        UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(user.getEmail(), newEmail.getPassword());
-        try {
-            authenticationManager.authenticate(authenticationToken);
-            user.setEmail(newEmail.getNewEmail());
-            userService.saveUser(user);
-            return new ResponseEntity<>(HttpStatus.OK);
-        } catch (AuthenticationException e) {
-            return new ResponseEntity<>("Password is incorrect", HttpStatus.UNAUTHORIZED);
-        }
-    }
-
-    /**
-     * Delete user
-     * @param request
-     * @param userId
-     * @return
-     */
-    @DeleteMapping(value = "/api/users/{userId}")
-    public ResponseEntity deleteUser(HttpServletRequest request, @PathVariable("userId") Long userId) {
-        Optional<User> optionalUser = userService.getUserById(userId);
-        if(optionalUser.isEmpty()) {
-            return new ResponseEntity<>("User with id {"+userId+"} is not found", HttpStatus.BAD_REQUEST);
-        }
-        User user = optionalUser.get();
-
-        String requestEmail = tokenProvider.getUsername(JWTFilter.resolveToken(request));
-        if(!user.getEmail().equals(requestEmail)) {
-            return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
-        }
-
-        userService.deleteUser(user);
-        return new ResponseEntity<>(HttpStatus.OK);
     }
 }
