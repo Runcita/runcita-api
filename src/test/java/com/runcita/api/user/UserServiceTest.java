@@ -2,6 +2,7 @@ package com.runcita.api.user;
 
 import com.runcita.api.Application;
 import com.runcita.api.shared.models.City;
+import com.runcita.api.shared.models.Profile;
 import com.runcita.api.shared.models.User;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -40,20 +41,22 @@ class UserServiceTest {
                 .id(111L)
                 .email("user@gmail.com")
                 .password("12345678")
-                .firstName("firstname")
-                .lastName("lastname")
-                .city(City.builder()
-                        .name("city")
-                        .code(1)
+                .profile(Profile.builder()
+                        .firstName("firstname")
+                        .lastName("lastname")
+                        .city(City.builder()
+                                .name("city")
+                                .code(1)
+                                .build())
+                        .birthday(1586653063000L)
+                        .sexe(false)
                         .build())
-                .birthday(1586653063000L)
-                .sexe(false)
                 .build();
     }
 
     @Test
     void getUserById_test() throws UserNotFoundException {
-        when(userRepository.findById(USER.getId())).thenReturn(Optional.of(USER));
+        when(userRepository.findById(USER.getId(), 2)).thenReturn(Optional.of(USER));
         assertEquals(USER, userService.getUserById(USER.getId()));
     }
 

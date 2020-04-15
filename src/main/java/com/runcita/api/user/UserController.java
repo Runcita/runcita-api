@@ -4,6 +4,7 @@ import com.runcita.api.config.security.jwt.JWTFilter;
 import com.runcita.api.config.security.jwt.TokenProvider;
 import com.runcita.api.shared.models.NewEmail;
 import com.runcita.api.shared.models.NewPassword;
+import com.runcita.api.shared.models.Profile;
 import com.runcita.api.shared.models.User;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -72,6 +73,10 @@ public class UserController {
     public ResponseEntity updateEmail(@PathVariable("userId") Long userId, @Valid @RequestBody NewEmail newEmail) throws UserNotFoundException {
         User user = userService.getUserById(userId);
 
+        if (userService.emailExists(newEmail.getNewEmail())) {
+            return new ResponseEntity<>("Email already exist", HttpStatus.BAD_REQUEST);
+        }
+
         UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(user.getEmail(), newEmail.getPassword());
         try {
             authenticationManager.authenticate(authenticationToken);
@@ -107,11 +112,10 @@ public class UserController {
      * @return user
      */
     @GetMapping(value = "/{userId}")
-    public ResponseEntity recoverUser(@PathVariable("userId") Long userId) throws UserNotFoundException {
+    public ResponseEntity<Profile> recoverUser(@PathVariable("userId") Long userId) throws UserNotFoundException {
         User user = userService.getUserById(userId);
 
-        user.setPassword(null);
-        return new ResponseEntity<>(user, HttpStatus.OK);
+        return new ResponseEntity<>(user.getProfile(), HttpStatus.OK);
     }
 
     /**
@@ -120,7 +124,7 @@ public class UserController {
      * @return user
      */
     @PutMapping(value = "/{userId}", consumes = { "application/json" })
-    public ResponseEntity updateUser(HttpServletRequest request, @PathVariable("userId") Long userId, @Valid @RequestBody User userUpdate) throws UserNotFoundException {
+    public ResponseEntity<Profile> updateUser(HttpServletRequest request, @PathVariable("userId") Long userId, @Valid @RequestBody Profile profileUpdate) throws UserNotFoundException {
         User user = userService.getUserById(userId);
 
         String requestEmail = tokenProvider.getUsername(JWTFilter.resolveToken(request));
@@ -128,11 +132,10 @@ public class UserController {
             return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
         }
 
-        userUpdate.setId(user.getId());
-        userUpdate.setEmail(user.getEmail());
-        userUpdate.setPassword(user.getPassword());
-        userService.saveUser(userUpdate);
-        return new ResponseEntity<>(userUpdate, HttpStatus.OK);
+        profileUpdate.setId(user.getProfile().getId());
+        user.setProfile(profileUpdate);
+        userService.saveUser(user);
+        return new ResponseEntity<>(user.getProfile(), HttpStatus.OK);
     }
 
     @ExceptionHandler(UserNotFoundException.class)
