@@ -4,10 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import com.runcita.api.Application;
 import com.runcita.api.config.security.jwt.TokenProvider;
-import com.runcita.api.shared.models.City;
-import com.runcita.api.shared.models.NewEmail;
-import com.runcita.api.shared.models.NewPassword;
-import com.runcita.api.shared.models.User;
+import com.runcita.api.shared.models.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.runner.RunWith;
@@ -74,14 +71,17 @@ class UserControllerTest {
                 .id(111L)
                 .email("user@gmail.com")
                 .password("12345678")
-                .firstName("firstname")
-                .lastName("lastname")
-                .city(City.builder()
-                        .name("city")
-                        .code(1)
+                .profile(Profile.builder()
+                        .id(222L)
+                        .firstName("firstname")
+                        .lastName("lastname")
+                        .city(City.builder()
+                                .name("city")
+                                .code(1)
+                                .build())
+                        .birthday(1586653063000L)
+                        .sexe(false)
                         .build())
-                .birthday(1586653063000L)
-                .sexe(false)
                 .build();
 
         NEW_PASSWORD = NewPassword.builder()
@@ -143,6 +143,7 @@ class UserControllerTest {
     @Test
     public void updateEmail_test() throws Exception {
         Mockito.when(userService.getUserById(USER.getId())).thenReturn(USER);
+        Mockito.when(userService.emailExists(NEW_EMAIL.getNewEmail())).thenReturn(false);
         Mockito.when(authenticationManager.authenticate(Mockito.any())).thenReturn(null);
 
         mockMvc.perform(put(UPDATE_EMAIL_PATH, USER.getId())
@@ -180,6 +181,21 @@ class UserControllerTest {
                 .andDo(print())
                 .andExpect(status().isUnauthorized())
                 .andExpect(content().string(containsString("Password is incorrect")));
+
+        verify(userService, times(0)).saveUser(USER);
+    }
+
+    @Test
+    public void updateEmail_with_email_already_exist_test() throws Exception {
+        Mockito.when(userService.getUserById(USER.getId())).thenReturn(USER);
+        Mockito.when(userService.emailExists(NEW_EMAIL.getNewEmail())).thenReturn(true);
+
+        mockMvc.perform(put(UPDATE_EMAIL_PATH, USER.getId())
+                .contentType(APPLICATION_JSON)
+                .content(objectWriter.writeValueAsString(NEW_EMAIL)))
+                .andDo(print())
+                .andExpect(status().isBadRequest())
+                .andExpect(content().string(containsString("Email already exist")));
 
         verify(userService, times(0)).saveUser(USER);
     }
@@ -227,7 +243,7 @@ class UserControllerTest {
         mockMvc.perform(get(RECOVER_USER_PATH, USER.getId()))
                 .andDo(print())
                 .andExpect(status().isOk())
-                .andExpect(MockMvcResultMatchers.jsonPath("$.id").value(USER.getId()))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.id").value(USER.getProfile().getId()))
                 .andExpect(MockMvcResultMatchers.jsonPath("$.password").doesNotExist());
     }
 
@@ -243,17 +259,17 @@ class UserControllerTest {
 
     @Test
     public void updateUser_test() throws Exception {
-        USER.setFirstName("firstname-update");
+        USER.getProfile().setFirstName("firstname-update");
 
         Mockito.when(userService.getUserById(USER.getId())).thenReturn(USER);
         Mockito.when(tokenProvider.getUsername(any())).thenReturn(USER.getEmail());
 
         mockMvc.perform(put(UPDATE_USER_PATH, USER.getId())
                 .contentType(APPLICATION_JSON)
-                .content(objectWriter.writeValueAsString(USER)))
+                .content(objectWriter.writeValueAsString(USER.getProfile())))
                 .andDo(print())
                 .andExpect(status().isOk())
-                .andExpect(MockMvcResultMatchers.jsonPath("$.id").value(USER.getId()));
+                .andExpect(MockMvcResultMatchers.jsonPath("$.id").value(USER.getProfile().getId()));
 
         verify(userService).saveUser(USER);
     }
@@ -264,7 +280,7 @@ class UserControllerTest {
 
         mockMvc.perform(put(UPDATE_USER_PATH, USER.getId())
                 .contentType(APPLICATION_JSON)
-                .content(objectWriter.writeValueAsString(USER)))
+                .content(objectWriter.writeValueAsString(USER.getProfile())))
                 .andDo(print())
                 .andExpect(status().isBadRequest())
                 .andExpect(content().string(containsString("User with id {"+USER.getId()+"} is not found")));
@@ -279,7 +295,7 @@ class UserControllerTest {
 
         mockMvc.perform(put(UPDATE_USER_PATH, USER.getId())
                 .contentType(APPLICATION_JSON)
-                .content(objectWriter.writeValueAsString(USER)))
+                .content(objectWriter.writeValueAsString(USER.getProfile())))
                 .andDo(print())
                 .andExpect(status().isUnauthorized());
 
