@@ -3,10 +3,8 @@ package com.runcita.api.user;
 import com.runcita.api.shared.models.User;
 import org.springframework.stereotype.Service;
 
-import java.util.Optional;
-
 /**
- * User service
+ * Auth service
  */
 @Service
 public class UserService {
@@ -23,16 +21,7 @@ public class UserService {
      * @return user
      */
     public User getUserById(Long userId) throws UserNotFoundException {
-        return userRepository.findById(userId, 2).orElseThrow(() -> new UserNotFoundException(userId));
-    }
-
-    /**
-     * Retrieve a user by email
-     * @param email
-     * @return user
-     */
-    public Optional<User> getUserByEmail(String email) {
-        return userRepository.findByEmail(email);
+        return userRepository.findById(userId).orElseThrow(() -> new UserNotFoundException(userId));
     }
 
     /**
@@ -52,11 +41,29 @@ public class UserService {
     }
 
     /**
-     * Indicates if the email of user already exists
-     * @param email
-     * @return boolean
+     * Recover email of user
+     * @param user
+     * @return email
      */
-    public boolean emailExists(String email) {
-        return userRepository.existsByEmail(email);
+    public String getEmailUser(User user) {
+        return userRepository.findEmailUser(user.getId());
     }
+
+//    /**
+//     * Subscribe to a user
+//     * @param user
+//     * @param otherUser
+//     */
+//    public void subscribeUser(User user, User otherUser) {
+//        userRepository.subscribeUser(user.getId(), otherUser.getId());
+//    }
+//
+//    /**
+//     * Indicates if the subscription of a user for other user exists
+//     * @param user
+//     * @param subscriber
+//     */
+//    public boolean subscriptionUserExists(User user, User subscriber) {
+//        return userRepository.subscriptionUserExists(user.getId(), subscriber.getId());
+//    }
 }

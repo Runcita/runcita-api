@@ -2,8 +2,9 @@ package com.runcita.api.auth;
 
 import com.runcita.api.config.security.jwt.TokenProvider;
 import com.runcita.api.shared.models.Auth;
-import com.runcita.api.shared.models.User;
-import com.runcita.api.user.UserService;
+import com.runcita.api.shared.models.NewEmail;
+import com.runcita.api.shared.models.NewPassword;
+import com.runcita.api.shared.models.Signin;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -24,7 +25,7 @@ import javax.validation.Valid;
 @RequestMapping("/auth")
 public class AuthController {
 
-    private final UserService userService;
+    private final AuthService authService;
 
     private final TokenProvider tokenProvider;
 
@@ -32,8 +33,8 @@ public class AuthController {
 
     private final AuthenticationManager authenticationManager;
 
-    public AuthController(PasswordEncoder passwordEncoder, UserService userService, TokenProvider tokenProvider, AuthenticationManager authenticationManager) {
-        this.userService = userService;
+    public AuthController(PasswordEncoder passwordEncoder, AuthService authService, TokenProvider tokenProvider, AuthenticationManager authenticationManager) {
+        this.authService = authService;
         this.tokenProvider = tokenProvider;
         this.passwordEncoder = passwordEncoder;
         this.authenticationManager = authenticationManager;
@@ -49,16 +50,16 @@ public class AuthController {
 
     /**
      * Authenticate a user
-     * @param auth
+     * @param signin
      * @return token
      */
     @PostMapping(value = "/signin", consumes = { "application/json" })
-    public ResponseEntity<String> signin(@Valid @RequestBody Auth auth) {
-        UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(auth.getEmail(), auth.getPassword());
+    public ResponseEntity<String> signin(@Valid @RequestBody Signin signin) {
+        UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(signin.getEmail(), signin.getPassword());
 
         try {
             authenticationManager.authenticate(authenticationToken);
-            return new ResponseEntity<>(tokenProvider.createToken(auth.getEmail()), HttpStatus.OK);
+            return new ResponseEntity<>(tokenProvider.createToken(signin.getEmail()), HttpStatus.OK);
         } catch (AuthenticationException e) {
             return new ResponseEntity<>("Authentication failed", HttpStatus.UNAUTHORIZED);
         }
@@ -66,17 +67,66 @@ public class AuthController {
 
     /**
      * Register a new user
-     * @param user
+     * @param auth
      * @return token
      */
     @PostMapping(value = "/signup", consumes = { "application/json" })
-    public ResponseEntity<String> signup(@Valid @RequestBody User user) {
-        if (userService.emailExists(user.getEmail())) {
+    public ResponseEntity<String> signup(@Valid @RequestBody Auth auth) {
+        if (authService.emailExists(auth.getEmail())) {
             return new ResponseEntity<>("Email already exist", HttpStatus.BAD_REQUEST);
         }
 
-        user.setPassword(passwordEncoder.encode(user.getPassword()));
-        userService.saveUser(user);
-        return new ResponseEntity<>(tokenProvider.createToken(user.getEmail()), HttpStatus.CREATED);
+        auth.setPassword(passwordEncoder.encode(auth.getPassword()));
+        authService.saveAuth(auth);
+        return new ResponseEntity<>(tokenProvider.createToken(auth.getEmail()), HttpStatus.CREATED);
+    }
+
+    /**
+     * Update user password
+     * @param newPassword
+     * @return
+     */
+    @PutMapping(value = "/updatepassword", consumes = { "application/json" })
+    public ResponseEntity updatePassword(@Valid @RequestBody NewPassword newPassword) throws AuthNotFoundException {
+        Auth auth = authService.getAuthByEmail(newPassword.getEmail());
+
+        UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(auth.getEmail(), newPassword.getOldPassword());
+        try {
+            authenticationManager.authenticate(authenticationToken);
+            auth.setPassword(passwordEncoder.encode(newPassword.getNewPassword()));
+            authService.saveAuth(auth);
+            return new ResponseEntity<>(HttpStatus.OK);
+        } catch (AuthenticationException e) {
+            return new ResponseEntity<>("Password is incorrect", HttpStatus.UNAUTHORIZED);
+        }
+    }
+
+    /**
+     * Update user email
+     * @param newEmail
+     * @return
+     */
+    @PutMapping(value = "/updateemail", consumes = { "application/json" })
+    public ResponseEntity updateEmail(@Valid @RequestBody NewEmail newEmail) throws AuthNotFoundException {
+        Auth auth = authService.getAuthByEmail(newEmail.getOldEmail());
+
+        if (authService.emailExists(newEmail.getNewEmail())) {
+            return new ResponseEntity<>("Email already exist", HttpStatus.BAD_REQUEST);
+        }
+
+        UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(auth.getEmail(), newEmail.getPassword());
+        try {
+            authenticationManager.authenticate(authenticationToken);
+            auth.setEmail(newEmail.getNewEmail());
+            authService.saveAuth(auth);
+            return new ResponseEntity<>(HttpStatus.OK);
+        } catch (AuthenticationException e) {
+            return new ResponseEntity<>("Password is incorrect", HttpStatus.UNAUTHORIZED);
+        }
+    }
+
+    @ExceptionHandler(AuthNotFoundException.class)
+    public final ResponseEntity<String> handleAuthNotFoundException(AuthNotFoundException ex) {
+        return new ResponseEntity<>(ex.getMessage(), HttpStatus.BAD_REQUEST);
     }
 }

@@ -1,27 +1,27 @@
 package com.runcita.api.config.security;
 
-import com.runcita.api.shared.models.User;
-import com.runcita.api.user.UserService;
+import com.runcita.api.auth.AuthNotFoundException;
+import com.runcita.api.auth.AuthService;
+import com.runcita.api.shared.models.Auth;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Component;
 
 import java.util.Collections;
-import java.util.Optional;
 
 
 /**
- * User detail service
+ * Auth detail service
  * (recover user informations)
  */
 @Component
 public class AppUserDetailService implements UserDetailsService {
 
-  private final UserService userService;
+  private final AuthService authService;
 
-  public AppUserDetailService(UserService userService) {
-    this.userService = userService;
+  public AppUserDetailService(AuthService authService) {
+    this.authService = authService;
   }
 
   /**
@@ -33,13 +33,15 @@ public class AppUserDetailService implements UserDetailsService {
   @Override
   public final UserDetails loadUserByUsername(String email)
     throws UsernameNotFoundException {
-    final Optional<User> optionalUser = this.userService.getUserByEmail(email);
-    if (optionalUser.isEmpty()) {
-      throw new UsernameNotFoundException("User with email '" + email + "' not found");
+    final Auth auth;
+    try {
+      auth = this.authService.getAuthByEmail(email);
+    } catch (AuthNotFoundException e) {
+      throw new UsernameNotFoundException("Auth with email '" + email + "' not found");
     }
 
     return org.springframework.security.core.userdetails.User.withUsername(email)
-      .password(optionalUser.get().getPassword()).authorities(Collections.emptyList())
+      .password(auth.getPassword()).authorities(Collections.emptyList())
       .accountExpired(false).accountLocked(false).credentialsExpired(false)
       .disabled(false).build();
   }

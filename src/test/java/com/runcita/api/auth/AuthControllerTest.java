@@ -4,11 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import com.runcita.api.Application;
 import com.runcita.api.config.security.jwt.TokenProvider;
-import com.runcita.api.shared.models.Auth;
-import com.runcita.api.shared.models.City;
-import com.runcita.api.shared.models.Profile;
-import com.runcita.api.shared.models.User;
-import com.runcita.api.user.UserService;
+import com.runcita.api.shared.models.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.runner.RunWith;
@@ -25,12 +21,12 @@ import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
 
 import static org.hamcrest.Matchers.containsString;
-
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
-
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -42,7 +38,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class AuthControllerTest {
 
     @MockBean
-    UserService userService;
+    AuthService authService;
 
     @MockBean
     TokenProvider tokenProvider;
@@ -61,16 +57,21 @@ class AuthControllerTest {
     private final String AUTHENTICATE_PATH = "/auth/authenticate";
     private final String SIGNIN_PATH = "/auth/signin";
     private final String SIGNUP_PATH = "/auth/signup";
+    private final String UPDATE_PASSWORD_PATH = "/auth/updatepassword";
+    private final String UPDATE_EMAIL_PATH = "/auth/updateemail";
 
-    private User USER;
-    private Auth AUTH;
+    private Auth auth;
+    private Signin signin;
+
+    private NewPassword newPassword;
+    private NewEmail newEmail;
 
     @BeforeEach
     void initBeforeTest() {
-        USER = User.builder()
+        auth = Auth.builder()
                 .email("user@gmail.com")
                 .password("12345678")
-                .profile(Profile.builder()
+                .user(User.builder()
                         .firstName("firstname")
                         .lastName("lastname")
                         .city(City.builder()
@@ -82,9 +83,21 @@ class AuthControllerTest {
                 .build())
                 .build();
 
-        AUTH = Auth.builder()
-                .email(USER.getEmail())
-                .password(USER.getPassword())
+        signin = Signin.builder()
+                .email(auth.getEmail())
+                .password(auth.getPassword())
+                .build();
+
+        newPassword = NewPassword.builder()
+                .email(auth.getEmail())
+                .oldPassword(auth.getPassword())
+                .newPassword("password-update")
+                .build();
+
+        newEmail = NewEmail.builder()
+                .oldEmail(auth.getEmail())
+                .password(auth.getPassword())
+                .newEmail("email-upadate@gmail.com")
                 .build();
     }
 
@@ -98,11 +111,11 @@ class AuthControllerTest {
     @Test
     void signin_test() throws Exception {
         Mockito.when(authenticationManager.authenticate(any())).thenReturn(null);
-        Mockito.when(tokenProvider.createToken(USER.getEmail())).thenReturn("Token");
+        Mockito.when(tokenProvider.createToken(auth.getEmail())).thenReturn("Token");
 
         mockMvc.perform(post(SIGNIN_PATH)
                 .contentType(APPLICATION_JSON)
-                .content(objectWriter.writeValueAsString(AUTH)))
+                .content(objectWriter.writeValueAsString(signin)))
                 .andDo(print())
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("Token")));
@@ -114,19 +127,19 @@ class AuthControllerTest {
 
         mockMvc.perform(post(SIGNIN_PATH)
                 .contentType(APPLICATION_JSON)
-                .content(objectWriter.writeValueAsString(AUTH)))
+                .content(objectWriter.writeValueAsString(signin)))
                 .andDo(print())
                 .andExpect(status().isUnauthorized());
     }
 
     @Test
     void signup_test() throws Exception {
-        Mockito.when(userService.emailExists(SIGNUP_PATH)).thenReturn(false);
-        Mockito.when(tokenProvider.createToken(USER.getEmail())).thenReturn("Token");
+        Mockito.when(authService.emailExists(SIGNUP_PATH)).thenReturn(false);
+        Mockito.when(tokenProvider.createToken(auth.getEmail())).thenReturn("Token");
 
         mockMvc.perform(post(SIGNUP_PATH)
                 .contentType(APPLICATION_JSON)
-                .content(objectWriter.writeValueAsString(USER)))
+                .content(objectWriter.writeValueAsString(auth)))
                 .andDo(print())
                 .andExpect(status().isCreated())
                 .andExpect(content().string(containsString("Token")));
@@ -134,14 +147,119 @@ class AuthControllerTest {
 
     @Test
     void signup_with_email_already_exist_test() throws Exception {
-        Mockito.when(userService.emailExists(USER.getEmail())).thenReturn(true);
+        Mockito.when(authService.emailExists(auth.getEmail())).thenReturn(true);
 
         mockMvc.perform(post(SIGNUP_PATH)
                 .contentType(APPLICATION_JSON)
-                .content(objectWriter.writeValueAsString(USER)))
+                .content(objectWriter.writeValueAsString(auth)))
                 .andDo(print())
                 .andExpect(status().isBadRequest())
                 .andExpect(content().string(containsString("Email already exist")));
+    }
+
+    @Test
+    void updatePassword_test() throws Exception {
+        Mockito.when(authService.getAuthByEmail(auth.getEmail())).thenReturn(auth);
+        Mockito.when(authenticationManager.authenticate(Mockito.any())).thenReturn(null);
+        Mockito.when(passwordEncoder.encode(newPassword.getNewPassword())).thenReturn("password-encoder");
+
+        mockMvc.perform(put(UPDATE_PASSWORD_PATH)
+                .contentType(APPLICATION_JSON)
+                .content(objectWriter.writeValueAsString(newPassword)))
+                .andDo(print())
+                .andExpect(status().isOk());
+
+        verify(authService).saveAuth(auth);
+        assertEquals("password-encoder", auth.getPassword());
+    }
+
+    @Test
+    void updatePassword_with_user_not_found_test() throws Exception {
+        Mockito.when(authService.getAuthByEmail(newEmail.getOldEmail())).thenThrow(new AuthNotFoundException(auth.getEmail()));
+
+        mockMvc.perform(put(UPDATE_PASSWORD_PATH)
+                .contentType(APPLICATION_JSON)
+                .content(objectWriter.writeValueAsString(newPassword)))
+                .andDo(print())
+                .andExpect(status().isBadRequest())
+                .andExpect(content().string(containsString("User with email {"+ auth.getEmail()+"} is not found")));
+
+        verify(authService, times(0)).saveAuth(auth);
+    }
+
+    @Test
+    void updatePassword_with_old_password_incorrect_test() throws Exception {
+        Mockito.when(authService.getAuthByEmail(auth.getEmail())).thenReturn(auth);
+        Mockito.when(authenticationManager.authenticate(Mockito.any())).thenThrow(new BadCredentialsException("no"));
+
+        mockMvc.perform(put(UPDATE_PASSWORD_PATH)
+                .contentType(APPLICATION_JSON)
+                .content(objectWriter.writeValueAsString(newPassword)))
+                .andDo(print())
+                .andExpect(status().isUnauthorized())
+                .andExpect(content().string(containsString("Password is incorrect")));
+
+        verify(authService, times(0)).saveAuth(auth);
+    }
+
+    @Test
+    public void updateEmail_test() throws Exception {
+        Mockito.when(authService.getAuthByEmail(auth.getEmail())).thenReturn(auth);
+        Mockito.when(authService.emailExists(newEmail.getNewEmail())).thenReturn(false);
+        Mockito.when(authenticationManager.authenticate(Mockito.any())).thenReturn(null);
+
+        mockMvc.perform(put(UPDATE_EMAIL_PATH)
+                .contentType(APPLICATION_JSON)
+                .content(objectWriter.writeValueAsString(newEmail)))
+                .andDo(print())
+                .andExpect(status().isOk());
+
+        verify(authService).saveAuth(auth);
+        assertEquals(newEmail.getNewEmail(), auth.getEmail());
+    }
+
+    @Test
+    public void updateEmail_with_user_not_found_test() throws Exception {
+        Mockito.when(authService.getAuthByEmail(newEmail.getOldEmail())).thenThrow(new AuthNotFoundException(auth.getEmail()));
+
+        mockMvc.perform(put(UPDATE_EMAIL_PATH)
+                .contentType(APPLICATION_JSON)
+                .content(objectWriter.writeValueAsString(newEmail)))
+                .andDo(print())
+                .andExpect(status().isBadRequest())
+                .andExpect(content().string(containsString("User with email {"+ auth.getEmail()+"} is not found")));
+
+        verify(authService, times(0)).saveAuth(auth);
+    }
+
+    @Test
+    public void updateEmail_with_old_password_incorrect_test() throws Exception {
+        Mockito.when(authService.getAuthByEmail(auth.getEmail())).thenReturn(auth);
+        Mockito.when(authenticationManager.authenticate(Mockito.any())).thenThrow(new BadCredentialsException("no"));
+
+        mockMvc.perform(put(UPDATE_EMAIL_PATH)
+                .contentType(APPLICATION_JSON)
+                .content(objectWriter.writeValueAsString(newEmail)))
+                .andDo(print())
+                .andExpect(status().isUnauthorized())
+                .andExpect(content().string(containsString("Password is incorrect")));
+
+        verify(authService, times(0)).saveAuth(auth);
+    }
+
+    @Test
+    public void updateEmail_with_email_already_exist_test() throws Exception {
+        Mockito.when(authService.getAuthByEmail(auth.getEmail())).thenReturn(auth);
+        Mockito.when(authService.emailExists(newEmail.getNewEmail())).thenReturn(true);
+
+        mockMvc.perform(put(UPDATE_EMAIL_PATH)
+                .contentType(APPLICATION_JSON)
+                .content(objectWriter.writeValueAsString(newEmail)))
+                .andDo(print())
+                .andExpect(status().isBadRequest())
+                .andExpect(content().string(containsString("Email already exist")));
+
+        verify(authService, times(0)).saveAuth(auth);
     }
 }
 

@@ -2,17 +2,10 @@ package com.runcita.api.user;
 
 import com.runcita.api.config.security.jwt.JWTFilter;
 import com.runcita.api.config.security.jwt.TokenProvider;
-import com.runcita.api.shared.models.NewEmail;
-import com.runcita.api.shared.models.NewPassword;
-import com.runcita.api.shared.models.Profile;
 import com.runcita.api.shared.models.User;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.AuthenticationException;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletRequest;
@@ -31,61 +24,9 @@ public class UserController {
 
     private final TokenProvider tokenProvider;
 
-    private final PasswordEncoder passwordEncoder;
-
-    private final AuthenticationManager authenticationManager;
-
-    public UserController(PasswordEncoder passwordEncoder, UserService userService, TokenProvider tokenProvider, AuthenticationManager authenticationManager) {
+    public UserController(UserService userService, TokenProvider tokenProvider) {
         this.userService = userService;
         this.tokenProvider = tokenProvider;
-        this.passwordEncoder = passwordEncoder;
-        this.authenticationManager = authenticationManager;
-    }
-
-    /**
-     * Update user password
-     * @param userId
-     * @param newPassword
-     * @return
-     */
-    @PutMapping(value = "/{userId}/updatepassword", consumes = { "application/json" })
-    public ResponseEntity updatePassword(@PathVariable("userId") Long userId, @Valid @RequestBody NewPassword newPassword) throws UserNotFoundException {
-        User user = userService.getUserById(userId);
-
-        UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(user.getEmail(), newPassword.getOldPassword());
-        try {
-            authenticationManager.authenticate(authenticationToken);
-            user.setPassword(passwordEncoder.encode(newPassword.getNewPassword()));
-            userService.saveUser(user);
-            return new ResponseEntity<>(HttpStatus.OK);
-        } catch (AuthenticationException e) {
-            return new ResponseEntity<>("Password is incorrect", HttpStatus.UNAUTHORIZED);
-        }
-    }
-
-    /**
-     * Update user email
-     * @param userId
-     * @param newEmail
-     * @return
-     */
-    @PutMapping(value = "/{userId}/updateemail", consumes = { "application/json" })
-    public ResponseEntity updateEmail(@PathVariable("userId") Long userId, @Valid @RequestBody NewEmail newEmail) throws UserNotFoundException {
-        User user = userService.getUserById(userId);
-
-        if (userService.emailExists(newEmail.getNewEmail())) {
-            return new ResponseEntity<>("Email already exist", HttpStatus.BAD_REQUEST);
-        }
-
-        UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(user.getEmail(), newEmail.getPassword());
-        try {
-            authenticationManager.authenticate(authenticationToken);
-            user.setEmail(newEmail.getNewEmail());
-            userService.saveUser(user);
-            return new ResponseEntity<>(HttpStatus.OK);
-        } catch (AuthenticationException e) {
-            return new ResponseEntity<>("Password is incorrect", HttpStatus.UNAUTHORIZED);
-        }
     }
 
     /**
@@ -97,8 +38,9 @@ public class UserController {
     public ResponseEntity deleteUser(HttpServletRequest request, @PathVariable("userId") Long userId) throws UserNotFoundException {
         User user = userService.getUserById(userId);
 
-        String requestEmail = tokenProvider.getUsername(JWTFilter.resolveToken(request));
-        if(!user.getEmail().equals(requestEmail)) {
+        String emailRequest = tokenProvider.getUsername(JWTFilter.resolveToken(request));
+        String emailUser = userService.getEmailUser(user);
+        if(!emailRequest.equals(emailUser)) {
             return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
         }
 
@@ -112,10 +54,10 @@ public class UserController {
      * @return user
      */
     @GetMapping(value = "/{userId}")
-    public ResponseEntity<Profile> recoverUser(@PathVariable("userId") Long userId) throws UserNotFoundException {
+    public ResponseEntity<User> recoverUser(@PathVariable("userId") Long userId) throws UserNotFoundException {
         User user = userService.getUserById(userId);
 
-        return new ResponseEntity<>(user.getProfile(), HttpStatus.OK);
+        return new ResponseEntity<>(user, HttpStatus.OK);
     }
 
     /**
@@ -124,19 +66,49 @@ public class UserController {
      * @return user
      */
     @PutMapping(value = "/{userId}", consumes = { "application/json" })
-    public ResponseEntity<Profile> updateUser(HttpServletRequest request, @PathVariable("userId") Long userId, @Valid @RequestBody Profile profileUpdate) throws UserNotFoundException {
+    public ResponseEntity<User> updateUser(HttpServletRequest request, @PathVariable("userId") Long userId, @Valid @RequestBody User userUpdate) throws UserNotFoundException {
         User user = userService.getUserById(userId);
 
-        String requestEmail = tokenProvider.getUsername(JWTFilter.resolveToken(request));
-        if(!user.getEmail().equals(requestEmail)) {
+        String emailRequest = tokenProvider.getUsername(JWTFilter.resolveToken(request));
+        String emailUser = userService.getEmailUser(user);
+        if(!emailRequest.equals(emailUser)) {
             return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
         }
 
-        profileUpdate.setId(user.getProfile().getId());
-        user.setProfile(profileUpdate);
-        userService.saveUser(user);
-        return new ResponseEntity<>(user.getProfile(), HttpStatus.OK);
+        userUpdate.setId(user.getId());
+        userService.saveUser(userUpdate);
+        return new ResponseEntity<>(userUpdate, HttpStatus.OK);
     }
+
+//    /**
+//     * Follow a user
+//     * @param userId
+//     * @return user
+//     */
+//    @PostMapping(value = "/{userId}/subscriptions/{otherUserId}")
+//    public ResponseEntity FollowUser(HttpServletRequest request, @PathVariable("userId") Long userId, @PathVariable("otherUserId") Long otherUserId) throws UserNotFoundException {
+//        User user = userService.getUserById(userId);
+//        User otherUser = userService.getUserById(otherUserId);
+//
+//        String emailRequest = tokenProvider.getUsername(JWTFilter.resolveToken(request));
+//        String emailUser = userService.getEmailUser(user);
+//        if(!emailRequest.equals(emailUser)) {
+//            return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
+//        }
+//
+//        if(userService.subscriptionUserExists(user, otherUser)) {
+//            return new ResponseEntity<>("Subscription already exist", HttpStatus.BAD_REQUEST);
+//        }
+//
+//        userService.subscribeUser(user, otherUser);
+//        return new ResponseEntity<>(HttpStatus.CREATED);
+//    }
+
+    // recuperer les soubscriptions
+    // GET /{userId}/subscriptions
+
+    // recuperer les subcribers
+    // GET /{userId}/subcribers
 
     @ExceptionHandler(UserNotFoundException.class)
     public final ResponseEntity<String> handleUserNotFoundException(UserNotFoundException ex) {
