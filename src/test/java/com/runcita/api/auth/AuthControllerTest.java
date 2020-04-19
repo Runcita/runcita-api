@@ -91,13 +91,11 @@ class AuthControllerTest {
                 .build();
 
         newPassword = NewPassword.builder()
-                .email(auth.getEmail())
                 .oldPassword(auth.getPassword())
                 .newPassword("password-update")
                 .build();
 
         newEmail = NewEmail.builder()
-                .oldEmail(auth.getEmail())
                 .password(auth.getPassword())
                 .newEmail("email-upadate@gmail.com")
                 .build();
@@ -183,7 +181,7 @@ class AuthControllerTest {
 
     @Test
     void updatePassword_test() throws Exception {
-        Mockito.when(authService.getAuthByEmail(auth.getEmail())).thenReturn(auth);
+        Mockito.when(authService.getAuthByEmail(any())).thenReturn(auth);
         Mockito.when(authenticationManager.authenticate(Mockito.any())).thenReturn(null);
         Mockito.when(passwordEncoder.encode(newPassword.getNewPassword())).thenReturn("password-encoder");
 
@@ -199,7 +197,8 @@ class AuthControllerTest {
 
     @Test
     void updatePassword_with_user_not_found_test() throws Exception {
-        Mockito.when(authService.getAuthByEmail(newEmail.getOldEmail())).thenThrow(new AuthNotFoundException(auth.getEmail()));
+        Mockito.when(tokenProvider.getUsername(any())).thenReturn(auth.getEmail());
+        Mockito.when(authService.getAuthByEmail(auth.getEmail())).thenThrow(new AuthNotFoundException(auth.getEmail()));
 
         mockMvc.perform(put(UPDATE_PASSWORD_PATH)
                 .contentType(APPLICATION_JSON)
@@ -213,6 +212,7 @@ class AuthControllerTest {
 
     @Test
     void updatePassword_with_old_password_incorrect_test() throws Exception {
+        Mockito.when(tokenProvider.getUsername(any())).thenReturn(auth.getEmail());
         Mockito.when(authService.getAuthByEmail(auth.getEmail())).thenReturn(auth);
         Mockito.when(authenticationManager.authenticate(Mockito.any())).thenThrow(new BadCredentialsException("no"));
 
@@ -228,6 +228,7 @@ class AuthControllerTest {
 
     @Test
     public void updateEmail_test() throws Exception {
+        Mockito.when(tokenProvider.getUsername(any())).thenReturn(auth.getEmail());
         Mockito.when(authService.getAuthByEmail(auth.getEmail())).thenReturn(auth);
         Mockito.when(authService.emailExists(newEmail.getNewEmail())).thenReturn(false);
         Mockito.when(authenticationManager.authenticate(Mockito.any())).thenReturn(null);
@@ -244,7 +245,8 @@ class AuthControllerTest {
 
     @Test
     public void updateEmail_with_user_not_found_test() throws Exception {
-        Mockito.when(authService.getAuthByEmail(newEmail.getOldEmail())).thenThrow(new AuthNotFoundException(auth.getEmail()));
+        Mockito.when(tokenProvider.getUsername(any())).thenReturn(auth.getEmail());
+        Mockito.when(authService.getAuthByEmail(auth.getEmail())).thenThrow(new AuthNotFoundException(auth.getEmail()));
 
         mockMvc.perform(put(UPDATE_EMAIL_PATH)
                 .contentType(APPLICATION_JSON)
@@ -258,6 +260,7 @@ class AuthControllerTest {
 
     @Test
     public void updateEmail_with_old_password_incorrect_test() throws Exception {
+        Mockito.when(tokenProvider.getUsername(any())).thenReturn(auth.getEmail());
         Mockito.when(authService.getAuthByEmail(auth.getEmail())).thenReturn(auth);
         Mockito.when(authenticationManager.authenticate(Mockito.any())).thenThrow(new BadCredentialsException("no"));
 
@@ -273,6 +276,7 @@ class AuthControllerTest {
 
     @Test
     public void updateEmail_with_email_already_exist_test() throws Exception {
+        Mockito.when(tokenProvider.getUsername(any())).thenReturn(auth.getEmail());
         Mockito.when(authService.getAuthByEmail(auth.getEmail())).thenReturn(auth);
         Mockito.when(authService.emailExists(newEmail.getNewEmail())).thenReturn(true);
 

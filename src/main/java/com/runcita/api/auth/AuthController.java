@@ -97,8 +97,9 @@ public class AuthController {
      * @return
      */
     @PutMapping(value = "/updatepassword", consumes = { "application/json" })
-    public ResponseEntity updatePassword(@Valid @RequestBody NewPassword newPassword) throws AuthNotFoundException {
-        Auth auth = authService.getAuthByEmail(newPassword.getEmail());
+    public ResponseEntity updatePassword(HttpServletRequest request, @Valid @RequestBody NewPassword newPassword) throws AuthNotFoundException {
+        String requestEmail = tokenProvider.getUsername(JWTFilter.resolveToken(request));
+        Auth auth = authService.getAuthByEmail(requestEmail);
 
         UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(auth.getEmail(), newPassword.getOldPassword());
         try {
@@ -117,8 +118,9 @@ public class AuthController {
      * @return
      */
     @PutMapping(value = "/updateemail", consumes = { "application/json" })
-    public ResponseEntity updateEmail(@Valid @RequestBody NewEmail newEmail) throws AuthNotFoundException {
-        Auth auth = authService.getAuthByEmail(newEmail.getOldEmail());
+    public ResponseEntity updateEmail(HttpServletRequest request, @Valid @RequestBody NewEmail newEmail) throws AuthNotFoundException {
+        String requestEmail = tokenProvider.getUsername(JWTFilter.resolveToken(request));
+        Auth auth = authService.getAuthByEmail(requestEmail);
 
         if (authService.emailExists(newEmail.getNewEmail())) {
             return new ResponseEntity<>("Email already exist", HttpStatus.BAD_REQUEST);
