@@ -19,6 +19,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -56,6 +57,7 @@ class AuthControllerTest {
 
     private final String AUTHENTICATE_PATH = "/auth/authenticate";
     private final String SIGNIN_PATH = "/auth/signin";
+    private final String ME_PATH = "/auth/me";
     private final String SIGNUP_PATH = "/auth/signup";
     private final String UPDATE_PASSWORD_PATH = "/auth/updatepassword";
     private final String UPDATE_EMAIL_PATH = "/auth/updateemail";
@@ -130,6 +132,28 @@ class AuthControllerTest {
                 .content(objectWriter.writeValueAsString(signin)))
                 .andDo(print())
                 .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void recoverUserAuthentificated_test() throws Exception {
+        Mockito.when(tokenProvider.getUsername(any())).thenReturn(auth.getEmail());
+        Mockito.when(authService.getAuthByEmail(auth.getEmail())).thenReturn(auth);
+
+        mockMvc.perform(get(ME_PATH))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(MockMvcResultMatchers.jsonPath("$.id").value(auth.getUser().getId()));
+    }
+
+    @Test
+    void recoverUserAuthentificated_with_user_not_found_test() throws Exception {
+        Mockito.when(tokenProvider.getUsername(any())).thenReturn(auth.getEmail());
+        Mockito.when(authService.getAuthByEmail(auth.getEmail())).thenThrow(new AuthNotFoundException(auth.getEmail()));
+
+        mockMvc.perform(get(ME_PATH))
+                .andDo(print())
+                .andExpect(status().isBadRequest())
+                .andExpect(content().string(containsString("User with email {"+ auth.getEmail()+"} is not found")));
     }
 
     @Test

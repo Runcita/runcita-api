@@ -1,10 +1,8 @@
 package com.runcita.api.auth;
 
+import com.runcita.api.config.security.jwt.JWTFilter;
 import com.runcita.api.config.security.jwt.TokenProvider;
-import com.runcita.api.shared.models.Auth;
-import com.runcita.api.shared.models.NewEmail;
-import com.runcita.api.shared.models.NewPassword;
-import com.runcita.api.shared.models.Signin;
+import com.runcita.api.shared.models.*;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -14,6 +12,7 @@ import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
+import javax.servlet.http.HttpServletRequest;
 import javax.validation.Valid;
 
 /**
@@ -63,6 +62,17 @@ public class AuthController {
         } catch (AuthenticationException e) {
             return new ResponseEntity<>("Authentication failed", HttpStatus.UNAUTHORIZED);
         }
+    }
+
+    /**
+     * Recover a user authentificated
+     * @return user
+     */
+    @GetMapping(value = "/me")
+    public ResponseEntity<User> recoverUserAuthentificated(HttpServletRequest request) throws AuthNotFoundException {
+        String requestEmail = tokenProvider.getUsername(JWTFilter.resolveToken(request));
+        Auth auth = authService.getAuthByEmail(requestEmail);
+        return new ResponseEntity<>(auth.getUser(), HttpStatus.OK);
     }
 
     /**
