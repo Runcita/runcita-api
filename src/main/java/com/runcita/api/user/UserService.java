@@ -3,6 +3,8 @@ package com.runcita.api.user;
 import com.runcita.api.shared.models.User;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+
 /**
  * Auth service
  */
@@ -49,21 +51,39 @@ public class UserService {
         return userRepository.findEmailUser(user.getId());
     }
 
-//    /**
-//     * Subscribe to a user
-//     * @param user
-//     * @param otherUser
-//     */
-//    public void subscribeUser(User user, User otherUser) {
-//        userRepository.subscribeUser(user.getId(), otherUser.getId());
-//    }
-//
-//    /**
-//     * Indicates if the subscription of a user for other user exists
-//     * @param user
-//     * @param subscriber
-//     */
-//    public boolean subscriptionUserExists(User user, User subscriber) {
-//        return userRepository.subscriptionUserExists(user.getId(), subscriber.getId());
-//    }
+    /**
+     * Subscribe to a user
+     * @param user
+     * @param otherUser
+     */
+    public void subscribeUser(User user, User otherUser) {
+        userRepository.subscribeUser(user.getId(), otherUser.getId());
+    }
+
+    /**
+     * Indicates if the subscription of a user for other user exists
+     * @param user
+     * @param subscriber
+     */
+    public boolean subscriptionUserExists(User user, User subscriber) {
+        return userRepository.subscriptionUserExists(user.getId(), subscriber.getId());
+    }
+
+    /**
+     * Recover subscribtions of user
+     * @param user
+     * @return subscriptions user
+     */
+    public List<User> getSubscriptionsOfUser(User user) {
+        return userRepository.findSubscriptionsOfUser(user.getId());
+    }
+
+    /**
+     * Recover subscribers of user
+     * @param user
+     * @return subscribers user
+     */
+    public List<User> getSubscribersOfUser(User user) {
+        return userRepository.findSubscribersOfUser(user.getId());
+    }
 }
