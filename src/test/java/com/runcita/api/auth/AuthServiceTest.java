@@ -74,14 +74,16 @@ class AuthServiceTest {
     }
 
     @Test
-    void emailExists_with_true_value_test() {
+    void emailExists_with_email_exist_test() {
         when(authRepository.existsByEmail(auth.getEmail())).thenReturn(true);
         assertTrue(authService.emailExists(auth.getEmail()));
     }
 
     @Test
-    void emailExists_with_false_value_test() {
+    void emailExists_with_email_not_exist_test() {
         when(authRepository.existsByEmail(auth.getEmail())).thenReturn(false);
         assertFalse(authService.emailExists(auth.getEmail()));
     }
+
+
 }
