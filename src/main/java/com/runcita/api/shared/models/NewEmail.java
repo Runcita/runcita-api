@@ -12,10 +12,6 @@ import javax.validation.constraints.Size;
 public class NewEmail {
 
     @NotNull
-    @Pattern(regexp = "^\\w+([\\.-]?\\w+)*@\\w+([\\.-]?\\w+)*(\\.\\w{2,3})+$")
-    private String oldEmail;
-
-    @NotNull
     @Size(min = 8, max = 100)
     private String password;
 
