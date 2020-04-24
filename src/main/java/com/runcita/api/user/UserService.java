@@ -11,14 +11,14 @@ import java.util.List;
 @Service
 public class UserService {
 
-    private UserRepository userRepository;
+    private final UserRepository userRepository;
 
     UserService(UserRepository userRepository) {
         this.userRepository = userRepository;
     }
 
     /**
-     * Retrieve a user by id
+     * Recover a user by id
      * @param userId
      * @return user
      */

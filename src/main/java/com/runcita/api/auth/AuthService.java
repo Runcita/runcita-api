@@ -9,7 +9,7 @@ import org.springframework.stereotype.Service;
 @Service
 public class AuthService {
 
-    private AuthRepository authRepository;
+    private final AuthRepository authRepository;
 
     AuthService(AuthRepository authRepository) {
         this.authRepository = authRepository;

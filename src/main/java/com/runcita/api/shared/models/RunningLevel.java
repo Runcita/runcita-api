@@ -20,7 +20,7 @@ public class RunningLevel {
     @NotNull
     private RunningLevelEnum name;
 
-    private enum RunningLevelEnum {
+    public enum RunningLevelEnum {
         TORTUE,
         GAZELLE,
         LAPIN,
