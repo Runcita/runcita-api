@@ -96,7 +96,7 @@ public class AuthController {
      * @param newPassword
      * @return
      */
-    @PutMapping(value = "/updatepassword", consumes = { "application/json" })
+    @PutMapping(value = "/update-password", consumes = { "application/json" })
     public ResponseEntity updatePassword(HttpServletRequest request, @Valid @RequestBody NewPassword newPassword) throws AuthNotFoundException {
         String requestEmail = tokenProvider.getUsername(JWTFilter.resolveToken(request));
         Auth auth = authService.getAuthByEmail(requestEmail);
@@ -117,7 +117,7 @@ public class AuthController {
      * @param newEmail
      * @return
      */
-    @PutMapping(value = "/updateemail", consumes = { "application/json" })
+    @PutMapping(value = "/update-email", consumes = { "application/json" })
     public ResponseEntity updateEmail(HttpServletRequest request, @Valid @RequestBody NewEmail newEmail) throws AuthNotFoundException {
         String requestEmail = tokenProvider.getUsername(JWTFilter.resolveToken(request));
         Auth auth = authService.getAuthByEmail(requestEmail);

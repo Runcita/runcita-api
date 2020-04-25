@@ -59,8 +59,8 @@ class AuthControllerTest {
     private final String SIGNIN_PATH = "/auth/signin";
     private final String ME_PATH = "/auth/me";
     private final String SIGNUP_PATH = "/auth/signup";
-    private final String UPDATE_PASSWORD_PATH = "/auth/updatepassword";
-    private final String UPDATE_EMAIL_PATH = "/auth/updateemail";
+    private final String UPDATE_PASSWORD_PATH = "/auth/update-password";
+    private final String UPDATE_EMAIL_PATH = "/auth/update-email";
 
     private Auth auth;
     private Signin signin;
